@@ -1,0 +1,31 @@
+.navbar {
+  position: fixed; /* Fixes the navbar at the top */
+  top: 0; /* Ensures it is at the top of the page */
+  left: 0; /* Aligns it to the left */
+  width: 100%; /* Makes the navbar full width */
+  background-color: #007bff; /* Background color */
+  color: white; /* Text color */
+  padding: 10px 0; /* Padding for top and bottom */
+  text-align: center; /* Centers the text */
+  z-index: 1000; /* Ensures it stays above other content */
+}
+
+.nav-links {
+  list-style: none; /* Remove bullet points */
+  padding: 0; /* Remove default padding */
+}
+
+.nav-links li {
+  display: inline; /* Display items inline */
+  margin: 0 15px; /* Margin between items */
+}
+
+.nav-links a {
+  color: white; /* Link text color */
+  text-decoration: none; /* Remove underline */
+}
+
+/* Add some margin to the main content to prevent it from being hidden under the navbar */
+main {
+  margin-top: 60px; /* Adjust this value based on the height of the navbar */
+}
