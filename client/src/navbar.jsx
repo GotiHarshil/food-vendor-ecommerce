@@ -4,7 +4,7 @@ import './Navbar.css'; // Importing styles specific to Navbar
 const Navbar = () => {
     return (
         <header className="navbar">
-            <h1>My Website</h1>
+            <h1 style={{ color: "white" }}>Food Vendor</h1>
             <nav>
                 <ul className="nav-links">
                     <li><a href="#home">Home</a></li>
