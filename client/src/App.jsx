@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Navbar from "./navbar.jsx"; 
+import Navbar from "./navbar.jsx";
 
 function App() {
   const [foods, setFoods] = useState([]);
@@ -12,7 +12,6 @@ function App() {
   }, []);
 
   return (
-    
     <div>
       <Navbar />
       <h1>Food Vendor Menu</h1>
