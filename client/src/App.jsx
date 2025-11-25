@@ -1,11 +1,24 @@
-import React from "react";
+// client/src/App.jsx
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./Navbar";
-import Home from "./pages/Home";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import { useEffect, useState } from "react";
-import "./Navbar.css";
+
+function Home({ foods, loading }) {
+  if (loading) return <h2>Loading...</h2>;
+
+  return (
+    <div style={{ padding: "20px" }}>
+      {/* <h2>Available Food Items</h2> */}
+      <ul>
+        {foods.map((item) => (
+          <li key={item._id}>
+            {item.name} - ${item.price}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function App() {
   const [foods, setFoods] = useState([]);
@@ -28,9 +41,7 @@ function App() {
     <Router>
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
+        <Route path="/" element={<Home foods={foods} loading={loading} />} />
       </Routes>
     </Router>
   );
