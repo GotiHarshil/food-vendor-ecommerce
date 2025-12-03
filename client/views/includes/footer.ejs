@@ -1,14 +1,154 @@
-<footer>
-    <div class="f-info">
-        <div class="f-info-socials">
-            <i class="fa-brands fa-square-facebook"></i>
-            <i class="fa-brands fa-square-instagram"></i>
-            <i class="fa-brands fa-linkedin"></i>
-        </div>
-        <div class="f-info-brand">&copy; WanderLust private Limited</div>
-        <div class="f-info-links">
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
-        </div>
+<style>
+  .footer {
+    width: 100%;
+    background: #2b2b2b;
+    color: #e6e6e6;
+    padding: 48px 0 24px 0;
+    font-family: "Inter", Arial, sans-serif;
+    margin-top: 48px;
+  }
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    gap: 32px;
+    padding: 0 28px;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .f-col {
+    flex: 1 1 0;
+    min-width: 220px;
+  }
+
+  .f-brand {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #ff6b35;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .f-desc {
+    margin-top: 12px;
+    color: #cbd5e1;
+    line-height: 1.6;
+  }
+
+  .f-socials {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+  }
+  .f-socials a {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .f-heading {
+    color: #fff;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .f-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .f-links a {
+    color: #cbd5e1;
+    text-decoration: none;
+  }
+  .f-links a:hover {
+    color: #fff;
+    text-decoration: underline;
+  }
+
+  .f-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: #cbd5e1;
+  }
+
+  .footer-sep {
+    margin: 28px auto 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    width: 95%;
+  }
+
+  .footer-copy {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.95rem;
+    padding-bottom: 6px;
+  }
+
+  @media (max-width: 800px) {
+    .footer-inner {
+      flex-direction: column;
+      gap: 18px;
+    }
+    .footer-sep {
+      width: 100%;
+    }
+  }
+</style>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="f-col">
+      <div class="f-brand"><i class="fa-solid fa-burger"></i> MANU</div>
+      <div class="f-desc">
+        Timeless food experiences crafted with care — discover local vendors,
+        authentic recipes, and delightful meals.
+      </div>
+      <div class="f-socials">
+        <a
+          href="https://facebook.com"
+          target="_blank"
+          rel="noopener"
+          aria-label="Facebook"
+          ><i class="fa-brands fa-facebook-f"></i
+        ></a>
+        <a
+          href="https://www.instagram.com/thedabelistation/?__pwa=1"
+          target="_blank"
+          rel="noopener"
+          aria-label="Instagram"
+          ><i class="fa-brands fa-instagram"></i
+        ></a>
+      </div>
     </div>
+
+    <div class="f-col">
+      <div class="f-heading">Company</div>
+      <div class="f-links">
+        <a href="/">Home</a>
+        <a href="/about">About us</a>
+        <a href="/services">Services</a>
+        <a href="/privacy">Privacy policy</a>
+      </div>
+    </div>
+
+    <div class="f-col">
+      <div class="f-heading">Get in touch</div>
+      <div class="f-contact">
+        <!-- <div>+1-212-456-7890</div> -->
+        <div>maundabeli2708@gmail.com</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-sep"></div>
+  <div class="footer-copy">&copy; 2025 MANU - All Rights Reserved.</div>
 </footer>

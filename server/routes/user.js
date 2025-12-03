@@ -30,10 +30,18 @@ router
     saveRedirectUrl,
     passport.authenticate("local", {
       failureRedirect: "/login",
-      failureFlash: true,
+      failureFlash: true, 
     }),
     userController.login
   );
+
+router
+  .route("/cart")
+  //Render signup
+  .get(userController.renderCartPage)
+  //Add user
+  // .post(wrapAsync(userController.signup));
+
 
 router
   .route("/logout")

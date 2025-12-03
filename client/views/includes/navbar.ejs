@@ -1,88 +1,136 @@
 <style>
-  .navbar {
+  /* Light header with orange/white theme matching attachment */
+  .site-navbar {
     width: 100%;
-    background-color: #f7b731; /* yellow bg */
+    background: #fff;
+    color: #23314f;
+    height: 78px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 15px 40px;
+    padding: 0 36px;
     box-sizing: border-box;
-    
+    position: sticky;
+    top: 0;
+    z-index: 1100;
+    border-bottom: 1px solid rgba(35, 49, 79, 0.06);
   }
 
-  .navbar .logo {
-    width: 120px;
-    cursor: pointer;
+  .site-navbar .brand {
+    color: #ff6b35;
+    font-weight: 800;
+    font-size: 1.6rem;
+    letter-spacing: 0.6px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  .navbar-menu {
+  .nav-center {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-menu {
     list-style: none;
     display: flex;
-    gap: 25px;
+    gap: 30px;
+    margin: 0;
+    padding: 0;
+    align-items: center;
   }
 
-  .navbar-menu a {
+  .nav-menu a {
+    color: #23314f;
     text-decoration: none;
-    text-transform: capitalize;
-    font-size: 18px;
-    color: #333;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.98rem;
+    padding: 8px 6px;
   }
 
-  .navbar-menu a:hover,
-  .navbar-menu a.active {
-    color: #fff;
+  .nav-menu a.active {
+    border-bottom: 2px solid #23314f;
+    padding-bottom: 6px;
   }
 
-  .navbar-right {
+  .nav-right {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
   }
 
-  .navbar-right img {
-    width: 28px;
-    cursor: pointer;
+  .nav-search input {
+    width: 220px;
+    padding: 8px 12px;
+    border-radius: 24px;
+    border: 1px solid rgba(35, 49, 79, 0.12);
+    outline: none;
+    font-size: 0.95rem;
+    color: #23314f;
   }
 
-  .navbar-search-icon {
-    position: relative;
+  .nav-search input::placeholder {
+    color: rgba(35, 49, 79, 0.4);
   }
 
-  .navbar-right button {
-    padding: 8px 14px;
-    border: none;
-    background-color: white;
-    font-size: 16px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 500;
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid rgba(35, 49, 79, 0.08);
+    color: #23314f;
+    text-decoration: none;
+  }
+
+  .icon-btn:hover {
+    background: rgba(35, 49, 79, 0.02);
+  }
+
+  .btn-outline {
+    padding: 8px 18px;
+    border-radius: 24px;
+    border: 1px solid #ff6b35;
+    color: #23314f;
+    background: #fff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .btn-outline:hover {
+    box-shadow: 0 6px 18px rgba(255, 107, 53, 0.08);
+  }
+
+  @media (max-width: 760px) {
+    .nav-center {
+      display: none;
+    }
   }
 </style>
+<header class="site-navbar">
+  <a class="brand" href="/"> <i class="fa-solid fa-burger"></i> MANU </a>
 
-<div class="navbar">
-  <!-- Logo -->
-  <a href="/">
-    <img class="logo" src="/assets/logo.png" alt="logo" />
-  </a>
+  <nav class="nav-center" aria-label="Main navigation">
+    <ul class="nav-menu">
+      <li><a href="/" class="active">Home</a></li>
+      <li><a href="/menu">Menu</a></li>
+    </ul>
+  </nav>
 
-  <!-- Menu -->
-  <ul class="navbar-menu">
-    <a href="/">home</a>
-    <a href="#explore-menu">menu</a>
-    <!-- <a href="#app-download">mobile app</a> -->
-    <a href="#footer">contact us</a>
-  </ul>
-
-  <!-- Right Section -->
-  <div class="navbar-right">
-    <i class="fa-solid fa-magnifying-glass" alt="search"></i>
-
-    <a href="/cart" class="navbar-search-icon">
-      <i class="fa-solid fa-basket-shopping"></i>
-    </a>
-
-    <a class="nav-link" href="/signup"><b> Sign up </b></a>
-    <a class="nav-link" href="/login"><b> Log in </b></a>
+  <div class="nav-right">
+    <form class="nav-search" action="/search" method="get">
+      <input type="search" name="q" placeholder="Search menu" />
+    </form>
+    <a href="/cart" class="icon-btn" title="Cart"
+      ><i class="fa-solid fa-basket-shopping"></i
+    ></a>
+    <% if(!currUser){ %>
+    <a href="/signup" class="btn-outline">Signup</a>
+    <a href="/login" class="btn-outline">login</a>
+    <% } else { %>
+    <a class="nav-link" href="/logout">Log out</a>
+    <% } %>
   </div>
-</div>
+</header>
