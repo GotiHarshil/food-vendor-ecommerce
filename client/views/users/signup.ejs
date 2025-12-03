@@ -1,0 +1,145 @@
+<% layout("layouts/boilerplate"); %>
+
+<style>
+  .auth-container {
+    max-width: 520px;
+    margin: 48px auto;
+    background: #fff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(35, 49, 79, 0.06);
+    font-family: Inter, Arial, sans-serif;
+  }
+  .auth-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .auth-header h2 {
+    margin: 0;
+    color: #23314f;
+    font-size: 1.6rem;
+  }
+  .auth-sub {
+    color: #6b7280;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid rgba(35, 49, 79, 0.12);
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: linear-gradient(90deg, #ff7b00, #ff6b35);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .muted {
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
+  .auth-footer {
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  .errors {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 600px) {
+    .auth-container {
+      margin: 20px;
+      padding: 20px;
+    }
+  }
+</style>
+
+<div class="auth-container">
+  <div class="auth-sub">
+    <h2>Create an account</h2>
+  </div>
+
+  <% if (typeof errors !== 'undefined' && errors.length) { %>
+  <div class="errors">
+    <ul style="margin: 0; padding-left: 18px">
+      <% errors.forEach(function(err){ %>
+      <li><%= err.msg || err %></li>
+      <% }) %>
+    </ul>
+  </div>
+  <% } %>
+
+  <form action="/signup" method="POST" novalidate>
+    <div class="form-group">
+      <label for="username">Full name</label>
+      <input
+        id="name"
+        name="username"
+        type="text"
+        required
+        value="<%= typeof body !== 'undefined' ? body.name || '' : '' %>"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email address</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        required
+        value="<%= typeof body !== 'undefined' ? body.email || '' : '' %>"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required />
+    </div>
+
+    <div class="form-group">
+      <label for="passwordConfirm">Confirm password</label>
+      <input
+        id="passwordConfirm"
+        name="passwordConfirm"
+        type="password"
+        required
+      />
+    </div>
+
+    <button class="btn-primary" type="submit">Create account</button>
+  </form>
+  <div class="auth-footer muted">
+    Already have an account? <a href="/login">login</a>
+  </div>
+</div>
