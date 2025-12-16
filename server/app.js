@@ -72,7 +72,9 @@ app.use(passport.session());
 
 // Use email as the username field for passport-local since the login form
 // posts `email` (not `username`). This prevents "Missing credentials" errors.
-passport.use(new LocalStrategy({ usernameField: "email" }, User.authenticate()));
+passport.use(
+  new LocalStrategy({ usernameField: "email" }, User.authenticate())
+);
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
@@ -87,6 +89,9 @@ app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   res.locals.currUser = req.user;
+  // expose current path to views so nav can mark the active link
+  res.locals.currentPath = req.path;
+  res.locals.currentUrl = req.originalUrl;
   next();
 });
 

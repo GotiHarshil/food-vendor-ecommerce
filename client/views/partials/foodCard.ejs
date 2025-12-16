@@ -1,0 +1,87 @@
+<% let currentQty = 0; if (Array.isArray(cartItems)) { const found =
+cartItems.find(it => String(it.foodId) === String(food._id)); if (found)
+currentQty = found.qty; } %>
+
+<div class="card shadow-sm border-0" style="border-radius: 15px">
+  <a href="/foods/<%= food._id %>">
+    <img
+      src="<%= food.imageUrl %>"
+      alt="<%= food.name %>"
+      class="card-img-top"
+      style="height: 180px; object-fit: cover; border-radius: 15px 15px 0 0"
+    />
+  </a>
+
+  <div class="card-body">
+    <h5 class="card-title fw-bold"><%= food.name %></h5>
+    <p class="card-text text-muted" style="min-height: 40px">
+      <%= food.description %>
+    </p>
+
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="text-danger fw-bold">$<%= food.price %></span>
+
+      <!-- CART CONTROL -->
+      <div class="cart-control" data-id="<%= food._id %>">
+        <!-- ADD BUTTON (shown only when qty = 0) -->
+        <% if (currentQty < 1) {%>
+        <form
+          action="/api/food/cart/add/<%= food._id %>"
+          method="POST"
+          style="display: inline"
+        >
+          <button class="btn btn-sm btn-warning text-white">Add</button>
+        </form>
+
+        <% }else { %>
+
+        <!-- QUANTITY WRAPPER (shown only when qty > 0) -->
+        <div
+          class="quantity-wrapper d-flex align-items-center justify-content-between px-2 py-1"
+          style="
+            background:white;
+            border-radius: 25px;
+            width:90px;
+            height:34px;
+            box-shadow:0 0 4px rgba(0,0,0,0.15);
+            display: <%= currentQty > 0 ? 'flex' : 'none' %>;
+          "
+          data-qty="<%= currentQty %>"
+        >
+          <button
+            class="btn btn-sm p-0 qty-minus"
+            style="
+              background: #ffdddd;
+              border-radius: 50%;
+              width: 25px;
+              height: 25px;
+              color: #d9534f;
+              font-size: 18px;
+            "
+          >
+            –
+          </button>
+
+          <span class="qty-value fw-bold" style="font-size: 16px">
+            <%= currentQty || 1 %>
+          </span>
+
+          <button
+            class="btn btn-sm p-0 qty-plus"
+            style="
+              background: #ddffdd;
+              border-radius: 50%;
+              width: 25px;
+              height: 25px;
+              color: #5cb85c;
+              font-size: 18px;
+            "
+          >
+            +
+          </button>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>

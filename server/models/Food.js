@@ -7,8 +7,17 @@ const foodSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     description: String,
     imageUrl: String,
-    category: String,
-    available: { type: Boolean, default: true }
+    category: {
+      type: String,
+      enum: [ 
+        "Signature Dabeli",
+        "Spicy Specials",
+        "Loaded Varieties",
+        "Snackes and sides",
+        "Bevarages"
+      ],
+    },
+    available: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

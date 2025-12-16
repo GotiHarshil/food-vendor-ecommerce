@@ -7,10 +7,29 @@
     <!-- <link rel="stylesheet" href="/css/style.css" /> -->
     <style>
       body {
+        position: relative; /* Needed for positioning the pseudo-element */
         font-family: "Plus Jakarta Sans", sans-serif !important;
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        /* Remove background-image from here */
+        background: none;
+        margin: 0; /* Optional: remove default margin */
+      }
+
+      body::before {
+        content: "";
+        position: fixed; /* or absolute if you prefer */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url(/images/background-image.png);
+        background-size: cover;
+        background-position: center;
+        opacity: 0.3; /* Adjust opacity here */
+        z-index: -1; /* Place behind all content */
+        pointer-events: none; /* So it doesn't block clicks */
       }
 
       .container {

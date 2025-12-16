@@ -103,6 +103,18 @@
     box-shadow: 0 6px 18px rgba(255, 107, 53, 0.08);
   }
 
+  /* logout-specific button: turn red on hover */
+  .btn-logout {
+    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+
+  .btn-logout:hover {
+    background: #dc2626; /* red */
+    border-color: #dc2626;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(220, 38, 38, 0.12);
+  }
+
   @media (max-width: 760px) {
     .nav-center {
       display: none;
@@ -114,23 +126,31 @@
 
   <nav class="nav-center" aria-label="Main navigation">
     <ul class="nav-menu">
-      <li><a href="/" class="active">Home</a></li>
-      <li><a href="/menu">Menu</a></li>
+      <li>
+        <a href="/" class="<%= currentPath === '/' ? 'active' : '' %>">Home</a>
+      </li>
+      <li>
+        <a
+          href="/api/food/menu"
+          class="<%= currentPath && currentPath.indexOf('/api/food') === 0 ? 'active' : '' %>"
+          >Menu</a
+        >
+      </li>
     </ul>
   </nav>
 
   <div class="nav-right">
-    <form class="nav-search" action="/search" method="get">
+    <!-- <form class="nav-search" action="/search" method="get">
       <input type="search" name="q" placeholder="Search menu" />
-    </form>
-    <a href="/cart" class="icon-btn" title="Cart"
+    </form> -->
+    <a href="/api/food/cart" class="icon-btn" title="Cart"
       ><i class="fa-solid fa-basket-shopping"></i
     ></a>
     <% if(!currUser){ %>
     <a href="/signup" class="btn-outline">Signup</a>
     <a href="/login" class="btn-outline">login</a>
     <% } else { %>
-    <a class="nav-link" href="/logout">Log out</a>
+    <a class="btn-outline btn-logout" href="/logout">Log out</a>
     <% } %>
   </div>
 </header>

@@ -15,7 +15,9 @@ module.exports.signup = async (req, res, next) => {
   console.log("check");
   try {
     let { username, email, password } = req.body;
-    const newUser = new User({ email, username });
+    // Save the full name into `name` field; passport-local-mongoose is
+    // configured to use `email` as the username field.
+    const newUser = new User({ email, name: username });
     const registeredUser = await User.register(newUser, password);
     console.log(registeredUser);
 
@@ -26,7 +28,7 @@ module.exports.signup = async (req, res, next) => {
     });
   } catch (e) {
     req.flash("error", e.message);
-    // res.redirect("/signup");
+    return res.redirect("/signup");
   }
 };
 
@@ -35,7 +37,9 @@ module.exports.renderLoginForm = (req, res) => {
 };
 
 module.exports.renderCartPage = (req, res) => {
-  res.render("pages/cart");
+  const cartItems = req.session.cart || [];
+  const deliveryFee = 5.0; // default
+  res.render("pages/cart", { cartItems, deliveryFee });
 };
 
 module.exports.login = async (req, res) => {

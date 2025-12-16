@@ -1,3 +1,5 @@
+<% layout("layouts/boilerplate"); %>
+
 <style>
   .cart-wrap { max-width: 1100px; margin: 40px auto; display:flex; gap:28px; padding:0 20px; box-sizing:border-box; }
   .cart-items { flex: 1 1 0; background:#fff; padding:20px; border-radius:10px; box-shadow:0 8px 30px rgba(35,49,79,0.06);} 
@@ -24,51 +26,80 @@
 <div class="cart-wrap">
   <div class="cart-items">
     <h2>Your Cart</h2>
-    <% if (typeof cartItems !== 'undefined' && cartItems.length) { %>
-      <% let subtotal = 0; cartItems.forEach(function(item){ subtotal += (item.price || 0) * (item.qty || 1); }); %>
-      <% cartItems.forEach(function(item){ %>
-        <div class="cart-item">
-          <div class="ci-thumb">
-            <% if (item.image) { %>
-              <img src="<%= item.image %>" alt="<%= item.name %>" />
-            <% } else { %>
-              <i class="fa-solid fa-bowl-food" style="font-size:28px;color:#ff6b35"></i>
-            <% } %>
-          </div>
-          <div class="ci-body">
-            <div class="ci-title"><%= item.name %></div>
-            <div class="ci-meta">Price: $<%= (item.price||0).toFixed(2) %> &middot; <%= item.vendor || '' %></div>
-          </div>
-          <div class="ci-actions">
-            <form action="/cart/update" method="POST" style="display:inline-flex; gap:8px; align-items:center;">
-              <input type="hidden" name="id" value="<%= item._id %>" />
-              <input class="qty-input" type="number" name="qty" value="<%= item.qty || 1 %>" min="1" />
-              <button class="btn-sm btn-update" type="submit">Update</button>
-            </form>
-            <form action="/cart/remove" method="POST" style="display:inline;">
-              <input type="hidden" name="id" value="<%= item._id %>" />
-              <button class="btn-sm btn-remove" type="submit">Remove</button>
-            </form>
-          </div>
+
+    <% if (cartItems && cartItems.length > 0) { %>
+
+      <% let subtotal = 0; %>
+
+      <% cartItems.forEach(function(item){ 
+           subtotal += item.price * item.qty; 
+      %>
+
+      <div class="cart-item">
+        <div class="ci-thumb">
+          <img src="<%= item.imageUrl %>" alt="<%= item.name %>" />
         </div>
+
+        <div class="ci-body">
+          <div class="ci-title"><%= item.name %></div>
+          <div class="ci-meta">Price: $<%= item.price.toFixed(2) %></div>
+        </div>
+
+        <div class="ci-actions">
+          <form action="/cart/update" method="POST" style="display:flex; gap:8px; align-items:center;">
+            <input type="hidden" name="id" value="<%= item._id %>">
+            <input class="qty-input" type="number" name="qty" value="<%= item.qty %>" min="1">
+            <button class="btn-sm btn-update" type="submit">Update</button>
+          </form>
+
+          <form action="/cart/remove" method="POST">
+            <input type="hidden" name="id" value="<%= item._id %>">
+            <button class="btn-sm btn-remove" type="submit">Remove</button>
+          </form>
+        </div>
+      </div>
+
       <% }) %>
+
     <% } else { %>
+
       <div class="empty">
         <h3>Your cart is empty</h3>
         <p>Looks like you haven't added anything yet.</p>
-        <a href="/listings" class="btn-checkout" style="display:inline-block;width:auto;padding:10px 18px;margin-top:12px;">Shop now</a>
+        <a href="/api/food/menu" class="btn-checkout" 
+           style="display:inline-block;width:auto;padding:10px 18px;margin-top:12px;">
+          Shop now
+        </a>
       </div>
+
     <% } %>
   </div>
 
   <aside class="cart-summary">
     <h3>Order summary</h3>
-    <% let subtotal = 0; if (typeof cartItems !== 'undefined' && cartItems.length) { cartItems.forEach(function(i){ subtotal += (i.price||0)*(i.qty||1); }); } %>
-    <div class="summary-row"><div>Subtotal</div><div>$<%= subtotal.toFixed(2) %></div></div>
-    <div class="summary-row"><div>Delivery</div><div>$<%= typeof deliveryFee !== 'undefined' ? deliveryFee.toFixed(2) : '5.00' %></div></div>
-    <div class="summary-row summary-total"><div>Total</div><div>$<%= (subtotal + (typeof deliveryFee !== 'undefined' ? deliveryFee : 5)).toFixed(2) %></div></div>
+
+    <% 
+      let subtotal = 0;
+      if (cartItems && cartItems.length) {
+        cartItems.forEach(i => subtotal += i.price * i.qty);
+      }
+    %>
+
+    <div class="summary-row">
+      <div>Subtotal</div>
+      <div>$<%= subtotal.toFixed(2) %></div>
+    </div>
+
+    <div class="summary-row summary-total">
+      <div>Total</div>
+      <div>$<%= subtotal.toFixed(2) %></div>
+    </div>
+
     <form action="/checkout" method="GET">
-      <button class="btn-checkout" type="submit" <%= (typeof cartItems === 'undefined' || cartItems.length===0) ? 'disabled' : '' %>>Proceed to checkout</button>
+      <button class="btn-checkout" type="submit"
+        <%= (!cartItems || cartItems.length === 0) ? "disabled" : "" %>>
+        Proceed to checkout
+      </button>
     </form>
   </aside>
 </div>

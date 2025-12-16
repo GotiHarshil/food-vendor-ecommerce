@@ -1,0 +1,94 @@
+<% layout("layouts/boilerplate"); %>
+
+<!-- <h1 class="text-3xl font-bold mb-8">Our Menu</h1> -->
+<div class="container mt-4">
+  <div class="row g-4">
+    <% for (let i = 0; i < (foods || []).length; i++) { let food = foods[i]; %>
+    <div class="col-lg-3 col-md-4 col-sm-6">
+      <%- include("./partials/foodCard.ejs", { food: food, cartItems: cartItems
+      }) %>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  document.querySelectorAll(".cart-control").forEach(control => {
+
+    const foodId = control.dataset.id;
+
+    const addBtn = control.querySelector(".add-btn");
+    const qtyBox = control.querySelector(".quantity-wrapper");
+    const qtyValue = control.querySelector(".qty-value");
+
+    const plus = control.querySelector(".qty-plus");
+    const minus = control.querySelector(".qty-minus");
+
+    let qty = parseInt(qtyBox?.dataset.qty || 0);
+
+    // ----------------------
+    // ADD BUTTON CLICK
+    // ----------------------
+    addBtn?.addEventListener("click", async () => {
+
+      await fetch(`/api/food/cart/add/${foodId}`, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      // SWITCH UI
+      addBtn.style.display = "none";
+      qtyBox.style.display = "flex";
+
+      qty = 1;
+      qtyValue.textContent = "1";
+    });
+
+    // ----------------------
+    // INCREASE QUANTITY
+    // ----------------------
+    plus?.addEventListener("click", async () => {
+      qty++;
+      qtyValue.textContent = qty;
+
+      await fetch(`/api/food/cart/update/${foodId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: "action=inc"
+      });
+    });
+
+    // ----------------------
+    // DECREASE QUANTITY
+    // ----------------------
+    minus?.addEventListener("click", async () => {
+      qty--;
+
+      await fetch(`/api/food/cart/update/${foodId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        body: "action=dec"
+      });
+
+      if (qty <= 0) {
+        qtyBox.style.display = "none";
+        addBtn.style.display = "inline-block";
+      } else {
+        qtyValue.textContent = qty;
+      }
+    });
+
+  });
+
+});
+</script>
