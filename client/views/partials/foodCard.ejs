@@ -2,7 +2,25 @@
 cartItems.find(it => String(it.foodId) === String(food._id)); if (found)
 currentQty = found.qty; } %>
 
-<div class="card shadow-sm border-0" style="border-radius: 15px">
+<div
+  class="card shadow-sm border-0"
+  style="border-radius: 15px; position: relative"
+>
+  <!-- Loading Overlay -->
+  <div
+    class="card-overlay"
+    style="
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 15px;
+      z-index: 10;
+    "
+  ></div>
   <a href="/foods/<%= food._id %>">
     <img
       src="<%= food.imageUrl %>"
@@ -22,7 +40,11 @@ currentQty = found.qty; } %>
       <span class="text-danger fw-bold">$<%= food.price %></span>
 
       <!-- CART CONTROL -->
-      <div class="cart-control" data-id="<%= food._id %>">
+      <div
+        class="cart-control"
+        data-id="<%= food._id %>"
+        style="position: relative; z-index: 5"
+      >
         <!-- ADD BUTTON (shown only when qty = 0) -->
         <% if (currentQty < 1) {%>
         <form
@@ -85,3 +107,73 @@ currentQty = found.qty; } %>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".card").forEach((card) => {
+      const control = card.querySelector(".cart-control");
+      const overlay = card.querySelector(".card-overlay");
+
+      if (!control || !overlay) return;
+
+      const foodId = control.dataset.id;
+      const qtyWrapper = control.querySelector(".quantity-wrapper");
+
+      if (!qtyWrapper) return;
+
+      const qtyValue = qtyWrapper.querySelector(".qty-value");
+      const qtyMinus = qtyWrapper.querySelector(".qty-minus");
+      const qtyPlus = qtyWrapper.querySelector(".qty-plus");
+
+      const showOverlay = () => {
+        overlay.style.display = "block";
+      };
+
+      const hideOverlay = () => {
+        overlay.style.display = "none";
+      };
+
+      qtyMinus.addEventListener("click", async () => {
+        showOverlay();
+        const currentQty = parseInt(qtyValue.textContent);
+        const newQty = currentQty - 1;
+
+        const response = await fetch(`/api/food/cart/update/${foodId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "dec" }),
+        });
+
+        if (response.ok) {
+          if (newQty <= 0) {
+            control.innerHTML = `<form action='/api/food/cart/add/${foodId}' method='POST' style='display: inline'>
+              <button class='btn btn-sm btn-warning text-white'>Add</button>
+            </form>`;
+          } else {
+            qtyValue.textContent = newQty;
+          }
+        }
+
+        hideOverlay();
+      });
+
+      qtyPlus.addEventListener("click", async () => {
+        showOverlay();
+        const currentQty = parseInt(qtyValue.textContent);
+        const newQty = currentQty + 1;
+
+        const response = await fetch(`/api/food/cart/update/${foodId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "inc" }),
+        });
+
+        if (response.ok) {
+          qtyValue.textContent = newQty;
+        }
+
+        hideOverlay();
+      });
+    });
+  });
+</script>

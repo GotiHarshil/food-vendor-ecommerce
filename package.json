@@ -1,8 +1,12 @@
 {
-  "dependencies": {
-    "concurrently": "^9.2.1"
-  },
   "scripts": {
-    "start": "concurrently \"npm start --prefix server\"  "
+    "server": "npm start --prefix server",
+    "client": "npm run dev --prefix client",
+    "start": "concurrently \"npm run server\" \"wait-on tcp:5000 && npm run client\""
+  },
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.18",
+    "concurrently": "^9.2.1",
+    "wait-on": "^9.0.3"
   }
 }
