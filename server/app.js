@@ -80,7 +80,12 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, cb) => cb(null, origin || true),
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Note: urlencoded and static middleware already registered above.
