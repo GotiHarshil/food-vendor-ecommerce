@@ -9,12 +9,12 @@ const foodSchema = new mongoose.Schema(
     imageUrl: String,
     category: {
       type: String,
-      enum: [ 
+      enum: [
         "Signature Dabeli",
         "Spicy Specials",
         "Loaded Varieties",
-        "Snackes and sides",
-        "Bevarages"
+        "Snacks and sides",
+        "Beverages"
       ],
     },
     available: { type: Boolean, default: true },
