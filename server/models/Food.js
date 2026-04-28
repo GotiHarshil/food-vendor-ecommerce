@@ -14,10 +14,13 @@ const foodSchema = new mongoose.Schema(
         "Spicy Specials",
         "Loaded Varieties",
         "Snacks and sides",
-        "Beverages"
+        "Beverages",
       ],
     },
     available: { type: Boolean, default: true },
+    isTodaysSpecial: { type: Boolean, default: false },
+    isTemporarilyHidden: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false }, // soft delete
   },
   { timestamps: true }
 );

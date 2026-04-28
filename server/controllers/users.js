@@ -71,8 +71,7 @@ module.exports.renderLoginForm = (req, res) => {
 
 module.exports.renderCartPage = (req, res) => {
   const cartItems = req.session.cart || [];
-  const deliveryFee = 5.0; // default
-  res.render("pages/cart", { cartItems, deliveryFee });
+  res.render("pages/cart", { cartItems });
 };
 
 module.exports.login = async (req, res) => {
@@ -131,6 +130,7 @@ module.exports.getUserStatus = (req, res) => {
         id: req.user._id,
         name: req.user.name,
         email: req.user.email,
+        role: req.user.role || "customer",
       },
     });
   } else {

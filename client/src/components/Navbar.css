@@ -387,6 +387,12 @@
   font-size: 0.95rem;
 }
 
+/* Admin link */
+.admin-link {
+  color: var(--primary) !important;
+  font-size: 0.85rem !important;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 868px) {
   .nav-center,

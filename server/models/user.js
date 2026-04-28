@@ -11,10 +11,14 @@ const userSchema = new Schema({
   name: {
     type: String,
   },
-});
+  role: {
+    type: String,
+    enum: ["customer", "admin"],
+    default: "customer",
+  },
+}, { timestamps: true });
 
 // Configure passport-local-mongoose to use the `email` field as the username
-// so authentication works with email instead of a separate `username`.
 userSchema.plugin(passportLocalMongoose, { usernameField: "email" });
 
 module.exports = mongoose.model("User", userSchema);

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
-    "seed": "node init/app.js"
+    "seed": "node seed.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

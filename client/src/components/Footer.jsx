@@ -57,7 +57,11 @@ export default function Footer() {
             </div>
             <div className="f-contact-item">
               <i className="fa-solid fa-location-dot"></i>
-              <span>Local delivery available</span>
+              <span>42W 46th Street, NY 10036</span>
+            </div>
+            <div className="f-contact-item">
+              <i className="fa-solid fa-store"></i>
+              <span>Self-pickup only</span>
             </div>
           </div>
         </div>

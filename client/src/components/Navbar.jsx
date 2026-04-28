@@ -112,6 +112,21 @@ export default function Navbar() {
                 {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
               </Link>
             </li>
+            {user && (
+              <li>
+                <Link to="/my-orders" className={isActive("/my-orders") ? "active" : ""}>
+                  Orders
+                </Link>
+              </li>
+            )}
+            {user?.role === "admin" && (
+              <li>
+                <Link to="/admin" className="admin-link">
+                  <i className="fa-solid fa-shield-halved"></i>
+                  Admin
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -181,6 +196,14 @@ export default function Navbar() {
                 Cart {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
               </Link>
             </li>
+            {user && (
+              <li><Link to="/my-orders" className={isActive("/my-orders") ? "active" : ""} onClick={() => setMenuOpen(false)}>My Orders</Link></li>
+            )}
+            {user?.role === "admin" && (
+              <li><Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: "var(--primary)" }}>
+                <i className="fa-solid fa-shield-halved"></i> Admin Panel
+              </Link></li>
+            )}
           </ul>
 
           <div className="mobile-auth">

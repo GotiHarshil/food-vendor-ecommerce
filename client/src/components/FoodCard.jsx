@@ -63,7 +63,7 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
   };
 
   return (
-    <div className={`food-card${justAdded ? " card-added" : ""}`}>
+    <div className={`food-card${justAdded ? " card-added" : ""}${!food.available ? " card-unavailable" : ""}`}>
       {isLoading && <div className="card-overlay"></div>}
 
       <div className="card-image">
@@ -71,6 +71,9 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
         <div className="card-category-badge">
           {food.category}
         </div>
+        {!food.available && (
+          <div className="card-unavailable-badge">Unavailable</div>
+        )}
       </div>
 
       <div className="card-body">
@@ -87,7 +90,7 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
               <button
                 className="btn-add"
                 onClick={handleAddToCart}
-                disabled={isLoading}
+                disabled={isLoading || !food.available}
               >
                 <i className="fa-solid fa-plus"></i>
                 Add

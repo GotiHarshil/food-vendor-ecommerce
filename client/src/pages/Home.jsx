@@ -33,17 +33,48 @@ function CountUp({ end, duration = 2000, suffix = "" }) {
 }
 
 export default function Home() {
-  const [popularItems, setPopularItems] = useState([]);
+  const [todaysSpecials, setTodaysSpecials] = useState([]);
+  const [stats, setStats] = useState({ totalItems: 0, totalOrders: 0, totalUsers: 0 });
+  const [storeInfo, setStoreInfo] = useState(null);
 
   useEffect(() => {
-    fetch("/api/food/menu", { credentials: "include" })
+    // Fetch today's specials
+    fetch("/api/food/todays-special", { credentials: "include" })
       .then((res) => res.json())
-      .then((data) => setPopularItems(data.slice(0, 4)))
+      .then((data) => setTodaysSpecials(data))
+      .catch(() => {});
+
+    // Fetch real stats
+    fetch("/api/food/stats", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setStats(data))
+      .catch(() => {});
+
+    // Fetch store info
+    fetch("/api/food/store-info", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setStoreInfo(data))
       .catch(() => {});
   }, []);
 
   return (
     <div className="home-page">
+      {/* Store closed banner */}
+      {storeInfo && !storeInfo.isOpen && (
+        <div className="store-closed-banner">
+          <i className="fa-solid fa-clock"></i>
+          We're currently closed. Please check back during operating hours!
+        </div>
+      )}
+
+      {/* Announcement banner */}
+      {storeInfo?.announcement && storeInfo.isOpen && (
+        <div className="announcement-banner">
+          <i className="fa-solid fa-bullhorn"></i>
+          {storeInfo.announcement}
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-bg">
@@ -53,16 +84,16 @@ export default function Home() {
 
         <div className="hero-content animate-fade-in-up">
           <span className="hero-badge">
-            <i className="fa-solid fa-fire"></i> #1 Food Delivery in Town
+            <i className="fa-solid fa-fire"></i> Fresh & Authentic Street Food
           </span>
           <h1 className="hero-title">
             Delicious Food,
             <br />
-            <span className="gradient-text">Delivered Fresh</span>
+            <span className="gradient-text">Ready for Pickup</span>
           </h1>
           <p className="hero-subtitle">
-            From our kitchen to your doorstep. Fresh ingredients, authentic
-            recipes, and a taste you'll love coming back for.
+            Order online and pick up fresh from our kitchen.
+            Authentic recipes, quality ingredients, and a taste you'll love.
           </p>
           <div className="hero-actions">
             <Link to="/menu" className="btn-hero-primary">
@@ -75,61 +106,92 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="hero-trust">
-            <div className="trust-avatars">
-              <div className="trust-avatar" style={{ background: "#ff6b35" }}>M</div>
-              <div className="trust-avatar" style={{ background: "#22c55e" }}>A</div>
-              <div className="trust-avatar" style={{ background: "#3b82f6" }}>N</div>
-              <div className="trust-avatar" style={{ background: "#8b5cf6" }}>U</div>
+          {storeInfo && (
+            <div className="hero-location">
+              <i className="fa-solid fa-location-dot"></i>
+              <span>{storeInfo.storeAddress}</span>
             </div>
-            <div className="trust-text">
-              <strong>500+</strong> happy customers this month
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="hero-visual animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
           <div className="hero-card">
             <div className="hero-card-img">
-              <img src="/images/food-banner.jpg" alt="Delicious food" />
+              <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80" alt="Delicious food spread" />
             </div>
             <div className="floating-badge badge-top">
               <i className="fa-solid fa-star" style={{ color: "#f59e0b" }}></i>
-              <span>4.9 Rating</span>
+              <span>Self Pickup</span>
             </div>
             <div className="floating-badge badge-bottom">
-              <i className="fa-solid fa-clock" style={{ color: "#22c55e" }}></i>
-              <span>25 min delivery</span>
+              <i className="fa-solid fa-bell" style={{ color: "#22c55e" }}></i>
+              <span>We'll notify you!</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats — real data */}
       <section className="stats-section">
         <div className="stats-grid">
           <div className="stat-item">
             <div className="stat-icon"><i className="fa-solid fa-burger"></i></div>
-            <div className="stat-number"><CountUp end={50} suffix="+" /></div>
+            <div className="stat-number"><CountUp end={stats.totalItems} suffix="+" /></div>
             <div className="stat-label">Menu Items</div>
           </div>
           <div className="stat-item">
+            <div className="stat-icon"><i className="fa-solid fa-receipt"></i></div>
+            <div className="stat-number"><CountUp end={stats.totalOrders} suffix="" /></div>
+            <div className="stat-label">Orders Served</div>
+          </div>
+          <div className="stat-item">
             <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
-            <div className="stat-number"><CountUp end={500} suffix="+" /></div>
-            <div className="stat-label">Happy Customers</div>
+            <div className="stat-number"><CountUp end={stats.totalUsers} suffix="" /></div>
+            <div className="stat-label">Registered Users</div>
           </div>
           <div className="stat-item">
-            <div className="stat-icon"><i className="fa-solid fa-truck-fast"></i></div>
-            <div className="stat-number"><CountUp end={25} /></div>
-            <div className="stat-label">Min Avg Delivery</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-icon"><i className="fa-solid fa-star"></i></div>
-            <div className="stat-number"><CountUp end={49} suffix="" /></div>
-            <div className="stat-label">Customer Rating</div>
+            <div className="stat-icon"><i className="fa-solid fa-location-dot"></i></div>
+            <div className="stat-number" style={{ fontSize: "1rem", fontWeight: 700 }}>NYC</div>
+            <div className="stat-label">42W 46th St</div>
           </div>
         </div>
       </section>
+
+      {/* Today's Special */}
+      {todaysSpecials.length > 0 && (
+        <section className="special-section">
+          <div className="section-header">
+            <span className="section-tag"><i className="fa-solid fa-fire"></i> Today's Special</span>
+            <h2 className="section-title">Chef's Picks for Today</h2>
+            <p className="section-subtitle">
+              Hand-selected by our chef — available for a limited time only!
+            </p>
+          </div>
+
+          <div className="special-grid stagger">
+            {todaysSpecials.map((item) => (
+              <div key={item._id} className="special-card animate-fade-in-up">
+                <div className="special-badge">
+                  <i className="fa-solid fa-fire"></i> Special
+                </div>
+                <div className="special-img">
+                  <img src={item.imageUrl} alt={item.name} />
+                </div>
+                <div className="special-info">
+                  <h4>{item.name}</h4>
+                  <p className="special-desc">{item.description}</p>
+                  <div className="special-bottom">
+                    <span className="special-price">${item.price}</span>
+                    <Link to="/menu" className="special-order-btn">
+                      Order Now <i className="fa-solid fa-arrow-right"></i>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="features-section">
@@ -137,7 +199,7 @@ export default function Home() {
           <span className="section-tag">Why MANU?</span>
           <h2 className="section-title">What Makes Us Special</h2>
           <p className="section-subtitle">
-            We're not just delivering food — we're delivering happiness.
+            We're not just making food — we're crafting experiences.
           </p>
         </div>
 
@@ -152,10 +214,10 @@ export default function Home() {
 
           <div className="feature-card animate-fade-in-up">
             <div className="feature-icon" style={{ background: "linear-gradient(135deg, #f0fdf4, #dcfce7)" }}>
-              <i className="fa-solid fa-bolt" style={{ color: "#16a34a" }}></i>
+              <i className="fa-solid fa-bell" style={{ color: "#16a34a" }}></i>
             </div>
-            <h3>Fast Delivery</h3>
-            <p>Lightning-fast delivery to your doorstep. Your food arrives hot, fresh, and on time.</p>
+            <h3>Order & Pickup</h3>
+            <p>Order online and we'll notify you when your food is ready for pickup. No waiting!</p>
           </div>
 
           <div className="feature-card animate-fade-in-up">
@@ -163,7 +225,7 @@ export default function Home() {
               <i className="fa-solid fa-shield-halved" style={{ color: "#2563eb" }}></i>
             </div>
             <h3>Safe & Hygienic</h3>
-            <p>Prepared in certified kitchens following strict hygiene and safety standards.</p>
+            <p>Prepared in a certified kitchen following strict hygiene and safety standards.</p>
           </div>
 
           <div className="feature-card animate-fade-in-up">
@@ -171,59 +233,53 @@ export default function Home() {
               <i className="fa-solid fa-heart" style={{ color: "#9333ea" }}></i>
             </div>
             <h3>Made with Love</h3>
-            <p>Every dish is crafted with passion by experienced chefs who care about your taste buds.</p>
+            <p>Every dish crafted with passion by experienced chefs who care about your taste buds.</p>
           </div>
         </div>
       </section>
 
-      {/* Popular Items */}
-      {popularItems.length > 0 && (
-        <section className="popular-section">
-          <div className="section-header">
-            <span className="section-tag">Customer Favorites</span>
-            <h2 className="section-title">Most Popular Dishes</h2>
-            <p className="section-subtitle">
-              These are the dishes our customers can't stop ordering.
-            </p>
-          </div>
+      {/* How it Works */}
+      <section className="how-it-works-section">
+        <div className="section-header">
+          <span className="section-tag">How it Works</span>
+          <h2 className="section-title">Three Simple Steps</h2>
+        </div>
 
-          <div className="popular-grid stagger">
-            {popularItems.map((item, idx) => (
-              <div key={item._id} className="popular-card animate-fade-in-up">
-                <div className="popular-rank">#{idx + 1}</div>
-                <div className="popular-img">
-                  <img src={item.imageUrl} alt={item.name} />
-                </div>
-                <div className="popular-info">
-                  <h4>{item.name}</h4>
-                  <p className="popular-category">{item.category}</p>
-                  <div className="popular-bottom">
-                    <span className="popular-price">${item.price}</span>
-                    <Link to="/menu" className="popular-order-btn">
-                      Order Now <i className="fa-solid fa-arrow-right"></i>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="steps-grid stagger">
+          <div className="step-card animate-fade-in-up">
+            <div className="step-number">1</div>
+            <h3>Browse & Order</h3>
+            <p>Pick your favorites from our menu and add them to your cart.</p>
           </div>
-
-          <div className="popular-cta">
-            <Link to="/menu" className="btn-view-all">
-              View Full Menu <i className="fa-solid fa-arrow-right"></i>
-            </Link>
+          <div className="step-connector"><i className="fa-solid fa-arrow-right"></i></div>
+          <div className="step-card animate-fade-in-up">
+            <div className="step-number">2</div>
+            <h3>Get Notified</h3>
+            <p>We'll let you know as soon as your order is ready for pickup.</p>
           </div>
-        </section>
-      )}
+          <div className="step-connector"><i className="fa-solid fa-arrow-right"></i></div>
+          <div className="step-card animate-fade-in-up">
+            <div className="step-number">3</div>
+            <h3>Pick Up & Enjoy</h3>
+            <p>Come to our store, grab your food, and enjoy every bite!</p>
+          </div>
+        </div>
+      </section>
 
       {/* CTA Banner */}
       <section className="cta-section">
         <div className="cta-content">
           <h2>Ready to Order?</h2>
           <p>
-            Join hundreds of happy customers. Browse our menu and get your
-            favorite food delivered in minutes.
+            Browse our menu and place your order. We'll have it freshly prepared
+            and waiting for you at our store.
           </p>
+          {storeInfo && (
+            <div className="cta-location">
+              <i className="fa-solid fa-location-dot"></i>
+              {storeInfo.storeAddress}
+            </div>
+          )}
           <div className="cta-actions">
             <Link to="/menu" className="btn-cta-primary">
               <i className="fa-solid fa-utensils"></i>

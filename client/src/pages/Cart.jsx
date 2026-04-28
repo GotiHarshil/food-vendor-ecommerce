@@ -9,10 +9,25 @@ export default function Cart() {
   const [error, setError] = useState(null);
   const [qtyInputs, setQtyInputs] = useState({});
   const [removingId, setRemovingId] = useState(null);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [orderNote, setOrderNote] = useState("");
+  const [orderSuccess, setOrderSuccess] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     fetchCart();
+    fetchUser();
   }, []);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch("/api/user/status", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      }
+    } catch { /* ignore */ }
+  };
 
   const fetchCart = async () => {
     setLoading(true);
@@ -71,8 +86,76 @@ export default function Cart() {
     }
   };
 
+  const handleCheckout = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    setCheckingOut(true);
+    try {
+      const response = await fetch("/api/food/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: orderNote }),
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setOrderSuccess(data);
+        setCartItems([]);
+      } else {
+        alert(data.error || "Checkout failed");
+      }
+    } catch (err) {
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
   const itemCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
+
+  // Order success view
+  if (orderSuccess) {
+    return (
+      <div className="cart-page">
+        <div className="order-success">
+          <div className="success-icon">
+            <i className="fa-solid fa-circle-check"></i>
+          </div>
+          <h2>Order Placed!</h2>
+          <p className="success-msg">
+            Your order has been received. We'll notify you when it's ready for <strong>self-pickup</strong>.
+          </p>
+          <div className="success-details">
+            <div className="success-row">
+              <span>Order Total</span>
+              <span>${orderSuccess.order?.subtotal?.toFixed(2)}</span>
+            </div>
+            <div className="success-row">
+              <span>Status</span>
+              <span className="status-badge status-pending">Pending</span>
+            </div>
+            <div className="success-row">
+              <span>Pickup at</span>
+              <span>42W 46th Street, NY 10036</span>
+            </div>
+          </div>
+          <div className="success-actions">
+            <Link to="/my-orders" className="btn-success-primary">
+              <i className="fa-solid fa-receipt"></i> View My Orders
+            </Link>
+            <Link to="/menu" className="btn-success-secondary">
+              Order More
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -174,10 +257,6 @@ export default function Cart() {
                 <span>Subtotal ({itemCount} items)</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-              <div className="summary-row">
-                <span>Delivery</span>
-                <span className="free-badge">Free</span>
-              </div>
             </div>
 
             <div className="summary-total">
@@ -185,13 +264,46 @@ export default function Cart() {
               <span>${subtotal.toFixed(2)}</span>
             </div>
 
+            <div className="pickup-notice">
+              <i className="fa-solid fa-store"></i>
+              <div>
+                <strong>Self-Pickup Only</strong>
+                <p>42W 46th Street, NY 10036</p>
+              </div>
+            </div>
+
+            <div className="order-note-group">
+              <label htmlFor="order-note">Order note (optional)</label>
+              <textarea
+                id="order-note"
+                placeholder="Any special requests..."
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value)}
+                rows={2}
+              />
+            </div>
+
             <button
               className="btn-checkout"
-              disabled={cartItems.length === 0}
-              onClick={() => alert("Checkout feature coming soon!")}
+              disabled={cartItems.length === 0 || checkingOut}
+              onClick={handleCheckout}
             >
-              <i className="fa-solid fa-lock"></i>
-              Proceed to Checkout
+              {checkingOut ? (
+                <>
+                  <span className="btn-spinner-sm"></span>
+                  Placing Order...
+                </>
+              ) : !user ? (
+                <>
+                  <i className="fa-solid fa-right-to-bracket"></i>
+                  Sign In to Order
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-check"></i>
+                  Place Order
+                </>
+              )}
             </button>
 
             <Link to="/menu" className="continue-shopping">
