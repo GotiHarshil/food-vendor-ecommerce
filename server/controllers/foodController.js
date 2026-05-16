@@ -3,6 +3,7 @@ const Food = require("../models/Food");
 const CartItem = require("../models/cartItem");
 const Order = require("../models/Order");
 const StoreSettings = require("../models/StoreSettings");
+const { broadcastOrders } = require("./adminController");
 
 // helper
 function getVisitorId(req) {
@@ -116,7 +117,7 @@ module.exports.addToCart = async (req, res, next) => {
     });
   }
 
-  if (req.headers["x-requested-with"] === "XMLHttpRequest") {
+  if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
     return res.json({ success: true, qty: item.qty });
   }
 
@@ -129,13 +130,12 @@ module.exports.updateCart = async (req, res) => {
   const foodId = req.params.id;
   const action = req.body.action;
   const qty = req.body.qty;
+  const wantsJson = req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json");
 
   let item = await CartItem.findOne({ userId, foodId });
 
   if (!item) {
-    if (req.headers["x-requested-with"] === "XMLHttpRequest") {
-      return res.status(404).json({ error: "Item not in cart" });
-    }
+    if (wantsJson) return res.status(404).json({ error: "Item not in cart" });
     return res.redirect("back");
   }
 
@@ -145,18 +145,14 @@ module.exports.updateCart = async (req, res) => {
     item.qty--;
     if (item.qty <= 0) {
       await CartItem.deleteOne({ userId, foodId });
-      if (req.headers["x-requested-with"] === "XMLHttpRequest") {
-        return res.json({ success: true, deleted: true });
-      }
+      if (wantsJson) return res.json({ success: true, deleted: true });
       return res.redirect("back");
     }
   } else if (action === "set" && qty) {
     const newQty = parseInt(qty);
     if (newQty <= 0) {
       await CartItem.deleteOne({ userId, foodId });
-      if (req.headers["x-requested-with"] === "XMLHttpRequest") {
-        return res.json({ success: true, deleted: true });
-      }
+      if (wantsJson) return res.json({ success: true, deleted: true });
       return res.redirect("back");
     }
     item.qty = newQty;
@@ -164,10 +160,7 @@ module.exports.updateCart = async (req, res) => {
 
   await item.save();
 
-  if (req.headers["x-requested-with"] === "XMLHttpRequest") {
-    return res.json({ success: true, qty: item.qty });
-  }
-
+  if (wantsJson) return res.json({ success: true, qty: item.qty });
   return res.redirect("back");
 };
 
@@ -214,6 +207,9 @@ module.exports.checkout = async (req, res) => {
 
   // Clear the cart
   await CartItem.deleteMany({ userId });
+
+  // Notify connected admin clients of the new order
+  broadcastOrders().catch(console.error);
 
   res.json({
     success: true,

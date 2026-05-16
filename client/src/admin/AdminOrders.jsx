@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 const STATUSES = ["all", "pending", "preparing", "ready", "picked_up", "cancelled"];
 const STATUS_LABELS = {
@@ -17,23 +17,61 @@ const NEXT_STATUS = {
 };
 
 export default function AdminOrders() {
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState(false);
   const [filter, setFilter] = useState("all");
-  const [expandedId, setExpandedId] = useState(null);
+  const [expandedIds, setExpandedIds] = useState(new Set());
   const [cancelReason, setCancelReason] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
 
-  const fetchOrders = (status = filter) => {
-    setLoading(true);
-    fetch(`/api/admin/orders?status=${status}&limit=50`, { credentials: "include" })
+  const fetchOrders = useCallback(() => {
+    fetch("/api/admin/orders?limit=100", { credentials: "include" })
       .then((res) => res.json())
-      .then((data) => setOrders(data.orders || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  };
+      .then((data) => {
+        setAllOrders(data.orders || []);
+        setLoading(false);
+      })
+      .catch(console.error);
+  }, []);
 
-  useEffect(() => { fetchOrders(); }, [filter]);
+  useEffect(() => {
+    // Always load orders immediately via regular HTTP
+    fetchOrders();
+
+    // In dev, bypass Vite proxy (which drops long-lived SSE connections) and
+    // connect directly to the Express server. In production there is no proxy.
+    const sseBase = import.meta.env.DEV ? "http://localhost:5000" : "";
+    const es = new EventSource(`${sseBase}/api/admin/orders/stream`, {
+      withCredentials: true,
+    });
+
+    es.onopen = () => setConnected(true);
+
+    es.onmessage = (e) => {
+      try {
+        setAllOrders(JSON.parse(e.data));
+        setLoading(false);
+      } catch (_) {}
+    };
+
+    es.onerror = () => setConnected(false);
+
+    return () => es.close();
+  }, [fetchOrders]);
+
+  const orders = filter === "all"
+    ? allOrders
+    : allOrders.filter((o) => o.status === filter);
+
+  const toggleExpand = (id) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
@@ -71,6 +109,21 @@ export default function AdminOrders() {
     <div>
       <div className="admin-page-header">
         <h1><i className="fa-solid fa-receipt"></i> Orders</h1>
+        <span
+          title={connected ? "Live updates active" : "Reconnecting…"}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "6px",
+            fontSize: "0.78rem", fontWeight: 600,
+            color: connected ? "var(--success, #22c55e)" : "var(--text-muted)",
+          }}
+        >
+          <span style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: connected ? "var(--success, #22c55e)" : "var(--text-muted)",
+            display: "inline-block",
+          }} />
+          {connected ? "Live" : "Reconnecting…"}
+        </span>
       </div>
 
       {/* Filters */}
@@ -102,7 +155,7 @@ export default function AdminOrders() {
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   padding: "14px 20px", cursor: "pointer", flexWrap: "wrap", gap: "12px",
                 }}
-                onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
+                onClick={() => toggleExpand(order._id)}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 700 }}>#{order._id.slice(-6).toUpperCase()}</span>
@@ -114,17 +167,17 @@ export default function AdminOrders() {
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <span style={{ fontWeight: 700 }}>${order.subtotal.toFixed(2)}</span>
+                  <span style={{ fontWeight: 700 }}>${order.subtotal?.toFixed(2) ?? "0.00"}</span>
                   <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
                     {new Date(order.createdAt).toLocaleString()}
                   </span>
-                  <i className={`fa-solid fa-chevron-${expandedId === order._id ? "up" : "down"}`}
+                  <i className={`fa-solid fa-chevron-${expandedIds.has(order._id) ? "up" : "down"}`}
                     style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}></i>
                 </div>
               </div>
 
               {/* Expanded details */}
-              {expandedId === order._id && (
+              {expandedIds.has(order._id) && (
                 <div style={{ borderTop: "1px solid var(--border)" }}>
                   {/* Items */}
                   <div style={{ padding: "14px 20px" }}>
@@ -140,8 +193,8 @@ export default function AdminOrders() {
                               {item.name}
                             </td>
                             <td>{item.qty}</td>
-                            <td>${item.price.toFixed(2)}</td>
-                            <td style={{ fontWeight: 600 }}>${(item.price * item.qty).toFixed(2)}</td>
+                            <td>${item.price?.toFixed(2) ?? "0.00"}</td>
+                            <td style={{ fontWeight: 600 }}>${((item.price ?? 0) * item.qty).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>

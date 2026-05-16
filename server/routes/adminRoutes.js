@@ -26,6 +26,7 @@ router.post("/items/:id/restore", wrapAsync(adminController.restoreItem));
 router.post("/todays-special", wrapAsync(adminController.setTodaysSpecial));
 
 // Orders
+router.get("/orders/stream", adminController.streamOrders);
 router.get("/orders", wrapAsync(adminController.getAllOrders));
 router.put("/orders/:id/status", wrapAsync(adminController.updateOrderStatus));
 router.post("/orders/:id/cancel", wrapAsync(adminController.cancelOrder));

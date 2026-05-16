@@ -27,7 +27,7 @@ router.post(
     const userId = req.user ? String(req.user._id) : req.sessionID;
     const foodId = req.params.id;
     const result = await CartItem.deleteOne({ userId, foodId });
-    if (req.headers["x-requested-with"] === "XMLHttpRequest") {
+    if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
       return res.json({ success: true, deletedCount: result.deletedCount });
     }
     res.redirect("back");

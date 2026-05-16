@@ -25,17 +25,34 @@ const app = express();
 
 const connectDB = require("./utils/db");
 
+// CORS must come first so preflight OPTIONS requests are handled before session/passport
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = process.env.CLIENT_URL || "http://localhost:5173";
+    // Allow same-origin requests (no Origin header) and the configured client URL
+    if (!origin || origin === allowed) return callback(null, true);
+    // In dev, allow any localhost port so the SSE direct connection works
+    if (process.env.NODE_ENV !== "production" && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("CORS: origin not allowed"));
+  },
+  credentials: true,
+}));
+
+// Body parsers before session so req.body is always populated when needed
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // View engine setup
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", [path.join(__dirname, "..", "client", "views")]);
 app.use(express.static(path.join(__dirname, "public")));
-app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
 const store = MongoStore.create({
   mongoUrl: process.env.MONGO_URL,
-  crypto: { secret: process.env.SESSION_SECRET },
   touchAfter: 24 * 3600,
 });
 
@@ -51,6 +68,7 @@ const sessionOptions = {
   cookie: {
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24, // 1 day
+    sameSite: "lax",
   },
 };
 
@@ -65,10 +83,6 @@ passport.use(
 );
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
-
-// Middleware
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
 
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");

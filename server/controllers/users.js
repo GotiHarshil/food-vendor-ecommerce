@@ -56,6 +56,7 @@ module.exports.signupAPI = async (req, res, next) => {
     // Login the user
     req.login(registeredUser, (err) => {
       if (err) {
+        console.error("req.login error (signup):", err);
         return res.status(500).json({ error: "Login failed after signup" });
       }
       res.json({ success: true, message: "Account created successfully" });
@@ -95,6 +96,7 @@ module.exports.loginAPI = async (req, res, next) => {
 
     req.login(user, (err) => {
       if (err) {
+        console.error("req.login error:", err);
         return res.status(500).json({ error: "Login failed" });
       }
       res.json({ success: true, message: "Logged in successfully" });

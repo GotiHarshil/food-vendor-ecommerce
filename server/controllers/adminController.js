@@ -5,6 +5,24 @@ const User = require("../models/user");
 const CartItem = require("../models/cartItem");
 const StoreSettings = require("../models/StoreSettings");
 
+// SSE clients for real-time order push
+const sseClients = new Set();
+
+async function broadcastOrders() {
+  if (sseClients.size === 0) return;
+  const orders = await Order.find({}).sort({ createdAt: -1 }).limit(100).lean();
+  const payload = `data: ${JSON.stringify(orders)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      if (client.writableEnded) { sseClients.delete(client); continue; }
+      client.write(payload);
+    } catch (_) {
+      sseClients.delete(client);
+    }
+  }
+}
+module.exports.broadcastOrders = broadcastOrders;
+
 // ─── DASHBOARD ──────────────────────────────────────────────
 module.exports.getDashboard = async (req, res) => {
   const [
@@ -189,6 +207,39 @@ module.exports.setTodaysSpecial = async (req, res) => {
 };
 
 // ─── ORDERS ─────────────────────────────────────────────────
+module.exports.streamOrders = async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  sseClients.add(res);
+
+  // Heartbeat every 25 s keeps the TCP connection alive through proxies/browsers
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(": ping\n\n");
+    } catch (_) {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    }
+  }, 25000);
+
+  // Register BEFORE any await to avoid race with early disconnect
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
+
+  try {
+    const orders = await Order.find({}).sort({ createdAt: -1 }).limit(100).lean();
+    res.write(`data: ${JSON.stringify(orders)}\n\n`);
+  } catch (err) {
+    console.error("SSE initial fetch error:", err);
+  }
+};
+
 module.exports.getAllOrders = async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
   const filter = {};
@@ -221,6 +272,7 @@ module.exports.updateOrderStatus = async (req, res) => {
   const order = await Order.findByIdAndUpdate(id, updateObj, { new: true });
   if (!order) return res.status(404).json({ error: "Order not found" });
   res.json(order);
+  broadcastOrders().catch(console.error);
 };
 
 module.exports.cancelOrder = async (req, res) => {
@@ -234,6 +286,7 @@ module.exports.cancelOrder = async (req, res) => {
   );
   if (!order) return res.status(404).json({ error: "Order not found" });
   res.json(order);
+  broadcastOrders().catch(console.error);
 };
 
 // ─── USERS ──────────────────────────────────────────────────

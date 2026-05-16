@@ -47,7 +47,7 @@ export default function Signup() {
       });
 
       if (response.ok) {
-        navigate("/login");
+        navigate("/menu");
       } else {
         const data = await response.json();
         setError(data.message || data.error || "An error occurred");

@@ -53,14 +53,17 @@ export default function Cart() {
     setQtyInputs((prev) => ({ ...prev, [itemId]: newQty }));
   };
 
-  const handleUpdate = async (itemId) => {
+  const handleUpdate = async (itemId, foodId) => {
     const newQty = parseInt(qtyInputs[itemId]) || 0;
     if (newQty < 1) return;
 
     try {
-      const response = await fetch(`/api/food/cart/update/${itemId}`, {
+      const response = await fetch(`/api/food/cart/update/${foodId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest",
+        },
         body: `action=set&qty=${newQty}`,
         credentials: "include",
       });
@@ -70,10 +73,10 @@ export default function Cart() {
     }
   };
 
-  const handleRemove = async (itemId) => {
+  const handleRemove = async (itemId, foodId) => {
     setRemovingId(itemId);
     try {
-      const response = await fetch(`/api/food/cart/remove/${itemId}`, {
+      const response = await fetch(`/api/food/cart/remove/${foodId}`, {
         method: "POST",
         headers: { "X-Requested-With": "XMLHttpRequest" },
         credentials: "include",
@@ -228,8 +231,8 @@ export default function Cart() {
                       min="1"
                       value={qtyInputs[item._id] || item.qty}
                       onChange={(e) => handleQtyChange(item._id, e.target.value)}
-                      onBlur={() => handleUpdate(item._id)}
-                      onKeyDown={(e) => e.key === "Enter" && handleUpdate(item._id)}
+                      onBlur={() => handleUpdate(item._id, item.foodId)}
+                      onKeyDown={(e) => e.key === "Enter" && handleUpdate(item._id, item.foodId)}
                     />
                   </div>
                 </div>
@@ -240,7 +243,7 @@ export default function Cart() {
 
                 <button
                   className="ci-remove"
-                  onClick={() => handleRemove(item._id)}
+                  onClick={() => handleRemove(item._id, item.foodId)}
                   title="Remove item"
                 >
                   <i className="fa-solid fa-xmark"></i>
