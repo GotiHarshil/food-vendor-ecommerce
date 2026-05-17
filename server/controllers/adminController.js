@@ -6,6 +6,7 @@ const CartItem = require("../models/cartItem");
 const StoreSettings = require("../models/StoreSettings");
 const AuditLog = require("../models/AuditLog");
 const { logAudit } = require("../utils/audit");
+const { uploadToCloudinary } = require("../utils/uploadToCloudinary");
 
 // SSE clients for real-time order push
 const sseClients = new Set();
@@ -140,10 +141,22 @@ module.exports.getAllItems = async (req, res) => {
 };
 
 module.exports.createItem = async (req, res) => {
-  const { name, price, description, imageUrl, category } = req.body;
+  const { name, price, description, category } = req.body;
   if (!name || !price || !category) {
     return res.status(400).json({ error: "Name, price, and category are required" });
   }
+
+  let imageUrl = req.body.imageUrl || "";
+
+  if (req.file) {
+    try {
+      const result = await uploadToCloudinary(req.file.buffer, `${name.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}`);
+      imageUrl = result.secure_url;
+    } catch (error) {
+      return res.status(400).json({ error: `Image upload failed: ${error.message}` });
+    }
+  }
+
   const item = await Food.create({ name, price, description, imageUrl, category });
   logAudit(req, "ITEM_CREATED", "Food", item._id, { name });
   res.status(201).json(item);
@@ -162,6 +175,16 @@ module.exports.updateItem = async (req, res) => {
   allowed.forEach((key) => {
     if (updates[key] !== undefined) updateObj[key] = updates[key];
   });
+
+  // Handle new image upload
+  if (req.file) {
+    try {
+      const result = await uploadToCloudinary(req.file.buffer, `${updates.name || "item"}-${Date.now()}`);
+      updateObj.imageUrl = result.secure_url;
+    } catch (error) {
+      return res.status(400).json({ error: `Image upload failed: ${error.message}` });
+    }
+  }
 
   const item = await Food.findByIdAndUpdate(id, updateObj, { new: true, runValidators: true });
   if (!item) return res.status(404).json({ error: "Item not found" });

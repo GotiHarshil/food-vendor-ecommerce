@@ -4,6 +4,7 @@ const router = express.Router();
 const adminController = require("../controllers/adminController");
 const { isAdmin } = require("../middleware");
 const wrapAsync = require("../utils/wrapAsync");
+const upload = require("../utils/multer");
 
 // All admin routes require admin authentication
 router.use(isAdmin);
@@ -17,8 +18,8 @@ router.put("/settings", wrapAsync(adminController.updateStoreSettings));
 
 // Food items
 router.get("/items", wrapAsync(adminController.getAllItems));
-router.post("/items", wrapAsync(adminController.createItem));
-router.put("/items/:id", wrapAsync(adminController.updateItem));
+router.post("/items", upload.single("image"), wrapAsync(adminController.createItem));
+router.put("/items/:id", upload.single("image"), wrapAsync(adminController.updateItem));
 router.delete("/items/:id", wrapAsync(adminController.deleteItem));
 router.post("/items/:id/restore", wrapAsync(adminController.restoreItem));
 
