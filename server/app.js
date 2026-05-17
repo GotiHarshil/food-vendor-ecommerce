@@ -20,6 +20,7 @@ const ejsMate = require("ejs-mate");
 const userRoutes = require("./routes/user.js");
 const foodRoutes = require("./routes/foodRoutes.js");
 const adminRoutes = require("./routes/adminRoutes.js");
+const { globalApiLimiter } = require("./middleware/rateLimiter");
 
 const app = express();
 
@@ -92,6 +93,9 @@ app.use((req, res, next) => {
   res.locals.currentUrl = req.originalUrl;
   next();
 });
+
+// Rate limiting
+app.use("/api", globalApiLimiter);
 
 // Routes
 app.use("/", userRoutes);

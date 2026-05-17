@@ -4,6 +4,7 @@ const router = express.Router({ mergeParams: true });
 const wrapAsync = require("../utils/wrapAsync");
 const passport = require("passport");
 const { saveRedirectUrl } = require("../middleware.js");
+const { authLimiter } = require("../middleware/rateLimiter");
 
 const userController = require("../controllers/users.js");
 
@@ -19,12 +20,12 @@ router
   //Render signup
   .get(userController.renderSignupForm)
   //Add user
-  .post(wrapAsync(userController.signup));
+  .post(authLimiter, wrapAsync(userController.signup));
 
 router
   .route("/api/user/signup")
   //API JSON endpoint for signup
-  .post(wrapAsync(userController.signupAPI));
+  .post(authLimiter, wrapAsync(userController.signupAPI));
 
 router
   .route("/login")
@@ -32,6 +33,7 @@ router
   .get(userController.renderLoginForm)
   //Login user
   .post(
+    authLimiter,
     saveRedirectUrl,
     passport.authenticate("local", {
       failureRedirect: "/login",
@@ -43,7 +45,7 @@ router
 router
   .route("/api/user/login")
   //API JSON endpoint for login
-  .post(wrapAsync(userController.loginAPI));
+  .post(authLimiter, wrapAsync(userController.loginAPI));
 
 router
   .route("/cart")

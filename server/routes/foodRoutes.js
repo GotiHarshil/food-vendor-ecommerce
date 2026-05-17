@@ -4,6 +4,7 @@ const router = express.Router();
 const foodController = require("../controllers/foodController");
 const wrapAsync = require("../utils/wrapAsync");
 const CartItem = require("../models/cartItem");
+const { checkoutLimiter } = require("../middleware/rateLimiter");
 
 // Public endpoints
 router.get("/ping", (req, res) => {
@@ -35,7 +36,7 @@ router.post(
 );
 
 // Checkout & orders
-router.post("/checkout", wrapAsync(foodController.checkout));
+router.post("/checkout", checkoutLimiter, wrapAsync(foodController.checkout));
 router.get("/my-orders", wrapAsync(foodController.getMyOrders));
 
 module.exports = router;
