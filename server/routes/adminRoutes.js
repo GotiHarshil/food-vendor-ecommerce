@@ -35,4 +35,7 @@ router.post("/orders/:id/cancel", wrapAsync(adminController.cancelOrder));
 router.get("/users", wrapAsync(adminController.getAllUsers));
 router.put("/users/:id/role", wrapAsync(adminController.updateUserRole));
 
+// Audit logs
+router.get("/audit-logs", wrapAsync(adminController.getAuditLogs));
+
 module.exports = router;

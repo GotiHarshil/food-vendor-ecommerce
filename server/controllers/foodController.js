@@ -4,6 +4,8 @@ const CartItem = require("../models/cartItem");
 const Order = require("../models/Order");
 const StoreSettings = require("../models/StoreSettings");
 const { broadcastOrders } = require("./adminController");
+const { sanitizeOrder } = require("../utils/sanitize");
+const { logAudit } = require("../utils/audit");
 
 // helper
 function getVisitorId(req) {
@@ -164,12 +166,8 @@ module.exports.updateCart = async (req, res) => {
   return res.redirect("back");
 };
 
-// POST /api/food/checkout — place order (requires login)
+// POST /api/food/checkout — place order (requires login via route middleware)
 module.exports.checkout = async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Please log in to place an order" });
-  }
-
   // Check if store is open
   const settings = await StoreSettings.getSettings();
   if (!settings.isOpen) {
@@ -211,22 +209,27 @@ module.exports.checkout = async (req, res) => {
   // Notify connected admin clients of the new order
   broadcastOrders().catch(console.error);
 
+  // Audit log
+  logAudit(req, "ORDER_CREATED", "Order", order._id, { subtotal: order.subtotal, itemCount: order.items.length });
+
   res.json({
     success: true,
     message: "Order placed! You'll be notified when it's ready for pickup.",
-    order,
+    order: sanitizeOrder(order, req.user.role),
   });
 };
 
-// GET /api/food/my-orders — user's own orders
+// GET /api/food/my-orders — user's own orders (requires login via route middleware)
 module.exports.getMyOrders = async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Please log in" });
-  }
-
   const orders = await Order.find({ userId: req.user._id })
     .sort({ createdAt: -1 })
     .lean();
 
-  res.json(orders);
+  res.json(orders.map((o) => sanitizeOrder(o, req.user.role)));
+};
+
+// GET /api/food/orders/:id — single order (requires ownership via route middleware)
+module.exports.getOrderById = async (req, res) => {
+  const order = sanitizeOrder(req.resource, req.user.role);
+  res.json(order);
 };

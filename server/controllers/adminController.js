@@ -4,6 +4,8 @@ const Order = require("../models/Order");
 const User = require("../models/user");
 const CartItem = require("../models/cartItem");
 const StoreSettings = require("../models/StoreSettings");
+const AuditLog = require("../models/AuditLog");
+const { logAudit } = require("../utils/audit");
 
 // SSE clients for real-time order push
 const sseClients = new Set();
@@ -143,6 +145,7 @@ module.exports.createItem = async (req, res) => {
     return res.status(400).json({ error: "Name, price, and category are required" });
   }
   const item = await Food.create({ name, price, description, imageUrl, category });
+  logAudit(req, "ITEM_CREATED", "Food", item._id, { name });
   res.status(201).json(item);
 };
 
@@ -162,6 +165,7 @@ module.exports.updateItem = async (req, res) => {
 
   const item = await Food.findByIdAndUpdate(id, updateObj, { new: true, runValidators: true });
   if (!item) return res.status(404).json({ error: "Item not found" });
+  logAudit(req, "ITEM_UPDATED", "Food", id, updateObj);
   res.json(item);
 };
 
@@ -171,12 +175,14 @@ module.exports.deleteItem = async (req, res) => {
 
   if (permanent === "true") {
     await Food.findByIdAndDelete(id);
+    logAudit(req, "ITEM_DELETED", "Food", id, { permanent: true });
     return res.json({ success: true, message: "Permanently deleted" });
   }
 
   // Soft delete
   const item = await Food.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
   if (!item) return res.status(404).json({ error: "Item not found" });
+  logAudit(req, "ITEM_DELETED", "Food", id, { permanent: false });
   res.json({ success: true, message: "Item soft-deleted", item });
 };
 
@@ -265,13 +271,16 @@ module.exports.updateOrderStatus = async (req, res) => {
     return res.status(400).json({ error: "Invalid status" });
   }
 
+  const existing = await Order.findById(id).select("status").lean();
+  if (!existing) return res.status(404).json({ error: "Order not found" });
+
   const updateObj = { status };
   if (adminNote) updateObj.adminNote = adminNote;
   if (status === "ready") updateObj.readyNotifiedAt = new Date();
 
   const order = await Order.findByIdAndUpdate(id, updateObj, { new: true });
-  if (!order) return res.status(404).json({ error: "Order not found" });
   res.json(order);
+  logAudit(req, "ORDER_STATUS_CHANGED", "Order", id, { from: existing.status, to: status });
   broadcastOrders().catch(console.error);
 };
 
@@ -286,6 +295,7 @@ module.exports.cancelOrder = async (req, res) => {
   );
   if (!order) return res.status(404).json({ error: "Order not found" });
   res.json(order);
+  logAudit(req, "ORDER_CANCELLED", "Order", id, { reason });
   broadcastOrders().catch(console.error);
 };
 
@@ -301,7 +311,26 @@ module.exports.updateUserRole = async (req, res) => {
   if (!["customer", "admin"].includes(role)) {
     return res.status(400).json({ error: "Invalid role" });
   }
+  const existing = await User.findById(id).select("role").lean();
+  if (!existing) return res.status(404).json({ error: "User not found" });
   const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select("-salt -hash");
-  if (!user) return res.status(404).json({ error: "User not found" });
+  logAudit(req, "USER_ROLE_CHANGED", "User", id, { from: existing.role, to: role });
   res.json(user);
+};
+
+// ─── AUDIT LOGS ──────────────────────────────────────────────
+module.exports.getAuditLogs = async (req, res) => {
+  const { page = 1, limit = 50, action } = req.query;
+  const filter = {};
+  if (action) filter.action = action;
+
+  const logs = await AuditLog.find(filter)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(Number(limit))
+    .lean();
+
+  const total = await AuditLog.countDocuments(filter);
+
+  res.json({ logs, total, page: Number(page), pages: Math.ceil(total / limit) });
 };
