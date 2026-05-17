@@ -2,6 +2,8 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import FloatingCart from "./components/FloatingCart";
+import { CartProvider } from "./context/CartContext";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu";
 import Cart from "./pages/Cart";
@@ -34,7 +36,7 @@ function App() {
         <Route
           path="*"
           element={
-            <>
+            <CartProvider>
               <Navbar />
               <main style={{ flex: 1 }}>
                 <Routes>
@@ -46,8 +48,9 @@ function App() {
                   <Route path="/my-orders" element={<MyOrders />} />
                 </Routes>
               </main>
+              <FloatingCart />
               <Footer />
-            </>
+            </CartProvider>
           }
         />
       </Routes>

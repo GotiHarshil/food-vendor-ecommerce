@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 import "./Cart.css";
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { refreshCart } = useCart();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,6 +41,7 @@ export default function Cart() {
         const inputs = {};
         data.forEach((item) => { inputs[item._id] = item.qty; });
         setQtyInputs(inputs);
+        refreshCart();
       } else {
         setError("Failed to load cart");
       }

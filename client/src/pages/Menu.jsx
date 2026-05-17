@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import FoodCard from "../components/FoodCard";
+import { useCart } from "../context/CartContext";
 import "./Menu.css";
 
 const CATEGORIES = [
@@ -37,6 +38,7 @@ export default function Menu() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
   const sectionRefs = useRef({});
+  const { refreshCart } = useCart();
 
   useEffect(() => {
     fetchData();
@@ -56,6 +58,7 @@ export default function Menu() {
 
       setFoods(foodsData);
       setCartItems(cartData);
+      refreshCart();
     } catch (err) {
       setError(err.message);
     } finally {
