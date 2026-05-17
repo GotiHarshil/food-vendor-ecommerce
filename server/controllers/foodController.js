@@ -106,6 +106,12 @@ module.exports.addToCart = async (req, res, next) => {
   let item = await CartItem.findOne({ userId, foodId });
 
   if (item) {
+    if (item.qty >= 15) {
+      if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
+        return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
+      }
+      return res.redirect("back");
+    }
     item.qty += 1;
     await item.save();
   } else {
@@ -142,6 +148,10 @@ module.exports.updateCart = async (req, res) => {
   }
 
   if (action === "inc") {
+    if (item.qty >= 15) {
+      if (wantsJson) return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
+      return res.redirect("back");
+    }
     item.qty++;
   } else if (action === "dec") {
     item.qty--;
@@ -155,6 +165,10 @@ module.exports.updateCart = async (req, res) => {
     if (newQty <= 0) {
       await CartItem.deleteOne({ userId, foodId });
       if (wantsJson) return res.json({ success: true, deleted: true });
+      return res.redirect("back");
+    }
+    if (newQty > 15) {
+      if (wantsJson) return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
       return res.redirect("back");
     }
     item.qty = newQty;
@@ -179,6 +193,11 @@ module.exports.checkout = async (req, res) => {
 
   if (cartItems.length === 0) {
     return res.status(400).json({ error: "Your cart is empty" });
+  }
+
+  const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
+  if (totalItems > 40) {
+    return res.status(400).json({ error: "Maximum 40 items per order. Please reduce quantities." });
   }
 
   const { note } = req.body;
