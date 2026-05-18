@@ -30,3 +30,5 @@ graphify-out/
 server/graphify-out/
 .graphify_incremental.json
 .CLOUDINARY_SETUP.md
+
+EMAIL_SETUP.md
