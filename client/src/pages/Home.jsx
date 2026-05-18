@@ -36,25 +36,43 @@ export default function Home() {
   const [todaysSpecials, setTodaysSpecials] = useState([]);
   const [stats, setStats] = useState({ totalItems: 0, totalOrders: 0, totalUsers: 0 });
   const [storeInfo, setStoreInfo] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     // Fetch today's specials
     fetch("/api/food/todays-special", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setTodaysSpecials(data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("[Home] Error fetching today's specials:", err);
+        setTodaysSpecials([]);
+      });
 
     // Fetch real stats
+    setStatsLoading(true);
     fetch("/api/food/stats", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setStats(data))
-      .catch(() => {});
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        console.log("[Home] Stats loaded:", data);
+        setStats(data || { totalItems: 0, totalOrders: 0, totalUsers: 0 });
+      })
+      .catch((err) => {
+        console.error("[Home] Error fetching stats:", err);
+        setStats({ totalItems: 0, totalOrders: 0, totalUsers: 0 });
+      })
+      .finally(() => setStatsLoading(false));
 
     // Fetch store info
     fetch("/api/food/store-info", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setStoreInfo(data))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("[Home] Error fetching store info:", err);
+        setStoreInfo(null);
+      });
   }, []);
 
   return (
@@ -117,7 +135,7 @@ export default function Home() {
         <div className="hero-visual animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
           <div className="hero-card">
             <div className="hero-card-img">
-              <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80" alt="Delicious food spread" />
+              <img src="https://res.cloudinary.com/dr0qdawz6/image/upload/v1779002157/food-vendor/manu-logo.png" alt="MANU Logo" />
             </div>
             <div className="floating-badge badge-top">
               <i className="fa-solid fa-star" style={{ color: "#f59e0b" }}></i>
@@ -132,29 +150,44 @@ export default function Home() {
       </section>
 
       {/* Stats — real data */}
-      <section className="stats-section">
-        <div className="stats-grid">
-          <div className="stat-item">
-            <div className="stat-icon"><i className="fa-solid fa-burger"></i></div>
-            <div className="stat-number"><CountUp end={stats.totalItems} suffix="+" /></div>
-            <div className="stat-label">Menu Items</div>
+      <section className="stats-section" style={{ minHeight: "200px" }}>
+        {statsLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "200px" }}>
+            <div style={{ textAlign: "center", color: "var(--text-muted)" }}>
+              <div style={{ fontSize: "1.2rem", marginBottom: "10px" }}>Loading stats...</div>
+              <i className="fa-solid fa-spinner" style={{ animation: "spin 1s linear infinite", fontSize: "2rem" }}></i>
+            </div>
           </div>
-          <div className="stat-item">
-            <div className="stat-icon"><i className="fa-solid fa-receipt"></i></div>
-            <div className="stat-number"><CountUp end={stats.totalOrders} suffix="" /></div>
-            <div className="stat-label">Orders Served</div>
+        ) : (
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="stat-icon"><i className="fa-solid fa-burger"></i></div>
+              <div className="stat-number">
+                {stats.totalItems > 0 ? <CountUp end={stats.totalItems} suffix="+" /> : <span>0+</span>}
+              </div>
+              <div className="stat-label">Menu Items</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-icon"><i className="fa-solid fa-receipt"></i></div>
+              <div className="stat-number">
+                {stats.totalOrders > 0 ? <CountUp end={stats.totalOrders} suffix="" /> : <span>0</span>}
+              </div>
+              <div className="stat-label">Orders Served</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
+              <div className="stat-number">
+                {stats.totalUsers > 0 ? <CountUp end={stats.totalUsers} suffix="" /> : <span>0</span>}
+              </div>
+              <div className="stat-label">Registered Users</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-icon"><i className="fa-solid fa-location-dot"></i></div>
+              <div className="stat-number" style={{ fontSize: "1rem", fontWeight: 700 }}>NYC</div>
+              <div className="stat-label">42W 46th St</div>
+            </div>
           </div>
-          <div className="stat-item">
-            <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
-            <div className="stat-number"><CountUp end={stats.totalUsers} suffix="" /></div>
-            <div className="stat-label">Registered Users</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-icon"><i className="fa-solid fa-location-dot"></i></div>
-            <div className="stat-number" style={{ fontSize: "1rem", fontWeight: 700 }}>NYC</div>
-            <div className="stat-label">42W 46th St</div>
-          </div>
-        </div>
+        )}
       </section>
 
       {/* Today's Special */}

@@ -5,6 +5,8 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
   const [currentQty, setCurrentQty] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     const found = cartItems.find(
@@ -12,6 +14,12 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
     );
     setCurrentQty(found ? found.qty : 0);
   }, [cartItems, food._id]);
+
+  const showErrorMessage = (message) => {
+    setErrorMsg(message);
+    setShowError(true);
+    setTimeout(() => setShowError(false), 4000);
+  };
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -26,9 +34,13 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
         setJustAdded(true);
         setTimeout(() => setJustAdded(false), 600);
         onUpdate?.();
+      } else {
+        const data = await response.json();
+        showErrorMessage(data.error || "Failed to add item to cart");
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
+      showErrorMessage("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -54,9 +66,13 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
           setCurrentQty(Math.max(currentQty - 1, 0));
         }
         onUpdate?.();
+      } else {
+        const data = await response.json();
+        showErrorMessage(data.error || "Failed to update cart");
       }
     } catch (error) {
       console.error("Error updating cart:", error);
+      showErrorMessage("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +81,13 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
   return (
     <div className={`food-card${justAdded ? " card-added" : ""}${!food.available ? " card-unavailable" : ""}`}>
       {isLoading && <div className="card-overlay"></div>}
+
+      {showError && (
+        <div className="error-toast">
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       <div className="card-image">
         <img src={food.imageUrl} alt={food.name} loading="lazy" />

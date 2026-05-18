@@ -28,3 +28,5 @@ CLAUDE.md
 .graphify_step_9_cost.py
 graphify-out/
 server/graphify-out/
+.graphify_incremental.json
+.CLOUDINARY_SETUP.md

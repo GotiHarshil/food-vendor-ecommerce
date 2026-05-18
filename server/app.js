@@ -24,6 +24,9 @@ const { globalApiLimiter } = require("./middleware/rateLimiter");
 
 const app = express();
 
+// Trust proxy to fix X-Forwarded-For header issues with rate limiting
+app.set("trust proxy", 1);
+
 const connectDB = require("./utils/db");
 
 // CORS must come first so preflight OPTIONS requests are handled before session/passport

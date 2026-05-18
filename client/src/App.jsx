@@ -7,6 +7,8 @@ import { CartProvider } from "./context/CartContext";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu";
 import Cart from "./pages/Cart";
+import OrderConfirmation from "./pages/OrderConfirmation";
+import OrderDetails from "./pages/OrderDetails";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MyOrders from "./pages/MyOrders";
@@ -43,6 +45,8 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/menu" element={<Menu />} />
                   <Route path="/cart" element={<Cart />} />
+                  <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                  <Route path="/orders/:orderId" element={<OrderDetails />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/my-orders" element={<MyOrders />} />

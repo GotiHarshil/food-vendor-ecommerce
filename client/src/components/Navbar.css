@@ -36,11 +36,20 @@
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   border-radius: 10px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 900;
   font-size: 1.1rem;
   transition: transform 0.3s var(--ease-spring);
+  overflow: hidden;
+}
+
+.brand-icon img {
+  width: 100%;
+  height: 120%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .brand:hover .brand-icon {

@@ -7,21 +7,33 @@ const StoreSettings = require("../models/StoreSettings");
 const AuditLog = require("../models/AuditLog");
 const { logAudit } = require("../utils/audit");
 const { uploadToCloudinary } = require("../utils/uploadToCloudinary");
+const { sendEmail, emailTemplates, statusInfo } = require("../utils/emailService");
 
 // SSE clients for real-time order push
 const sseClients = new Set();
 
 async function broadcastOrders() {
   if (sseClients.size === 0) return;
-  const orders = await Order.find({}).sort({ createdAt: -1 }).limit(100).lean();
-  const payload = `data: ${JSON.stringify(orders)}\n\n`;
-  for (const client of sseClients) {
-    try {
-      if (client.writableEnded) { sseClients.delete(client); continue; }
-      client.write(payload);
-    } catch (_) {
-      sseClients.delete(client);
+  try {
+    const orders = await Order.find({}).sort({ createdAt: -1 }).limit(100).lean();
+    const payload = `data: ${JSON.stringify(orders)}\n\n`;
+    let sent = 0;
+    for (const client of sseClients) {
+      try {
+        if (client.writableEnded) {
+          sseClients.delete(client);
+          continue;
+        }
+        client.write(payload);
+        sent++;
+      } catch (err) {
+        console.error("[SSE Broadcast] Error writing to client:", err.message);
+        sseClients.delete(client);
+      }
     }
+    if (sent > 0) console.log(`[SSE Broadcast] Sent orders update to ${sent} clients`);
+  } catch (err) {
+    console.error("[SSE Broadcast] Error fetching orders:", err.message);
   }
 }
 module.exports.broadcastOrders = broadcastOrders;
@@ -236,37 +248,52 @@ module.exports.setTodaysSpecial = async (req, res) => {
 };
 
 // ─── ORDERS ─────────────────────────────────────────────────
-module.exports.streamOrders = async (req, res) => {
+module.exports.streamOrders = (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
+  res.setHeader("Access-Control-Allow-Origin", process.env.CLIENT_URL || "http://localhost:5173");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.flushHeaders();
 
+  console.log("[SSE] Admin client connected");
   sseClients.add(res);
 
-  // Heartbeat every 25 s keeps the TCP connection alive through proxies/browsers
+  // Send initial orders immediately
+  Order.find({}).sort({ createdAt: -1 }).limit(100).lean()
+    .then((orders) => {
+      try {
+        res.write(`data: ${JSON.stringify(orders)}\n\n`);
+      } catch (err) {
+        console.error("[SSE] Error sending initial orders:", err.message);
+      }
+    })
+    .catch((err) => console.error("[SSE] Error fetching initial orders:", err.message));
+
+  // Heartbeat every 25s keeps the TCP connection alive through proxies/browsers
   const heartbeat = setInterval(() => {
     try {
       res.write(": ping\n\n");
-    } catch (_) {
+    } catch (err) {
+      console.log("[SSE] Heartbeat failed, removing client");
       clearInterval(heartbeat);
       sseClients.delete(res);
     }
   }, 25000);
 
-  // Register BEFORE any await to avoid race with early disconnect
+  // Register close handler
   req.on("close", () => {
+    console.log("[SSE] Admin client disconnected");
     clearInterval(heartbeat);
     sseClients.delete(res);
   });
 
-  try {
-    const orders = await Order.find({}).sort({ createdAt: -1 }).limit(100).lean();
-    res.write(`data: ${JSON.stringify(orders)}\n\n`);
-  } catch (err) {
-    console.error("SSE initial fetch error:", err);
-  }
+  req.on("error", (err) => {
+    console.error("[SSE] Client error:", err.message);
+    clearInterval(heartbeat);
+    sseClients.delete(res);
+  });
 };
 
 module.exports.getAllOrders = async (req, res) => {
@@ -302,6 +329,14 @@ module.exports.updateOrderStatus = async (req, res) => {
   if (status === "ready") updateObj.readyNotifiedAt = new Date();
 
   const order = await Order.findByIdAndUpdate(id, updateObj, { new: true });
+
+  // Send status update email to customer
+  const user = await User.findById(order.userId);
+  if (user && user.email && status !== "cancelled") {
+    const emailContent = emailTemplates.orderStatusUpdate(order, user, statusInfo[status]);
+    sendEmail(user.email, emailContent.subject, emailContent.html).catch(console.error);
+  }
+
   res.json(order);
   logAudit(req, "ORDER_STATUS_CHANGED", "Order", id, { from: existing.status, to: status });
   broadcastOrders().catch(console.error);
@@ -317,6 +352,14 @@ module.exports.cancelOrder = async (req, res) => {
     { new: true }
   );
   if (!order) return res.status(404).json({ error: "Order not found" });
+
+  // Send cancellation email to customer
+  const user = await User.findById(order.userId);
+  if (user && user.email) {
+    const emailContent = emailTemplates.orderCancelled(order, user, reason || "Cancelled by admin");
+    sendEmail(user.email, emailContent.subject, emailContent.html).catch(console.error);
+  }
+
   res.json(order);
   logAudit(req, "ORDER_CANCELLED", "Order", id, { reason });
   broadcastOrders().catch(console.error);

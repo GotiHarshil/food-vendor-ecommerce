@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useCart } from "../context/CartContext";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -8,13 +7,14 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  const { cartCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     checkUserStatus();
+    fetchCartCount();
     setMenuOpen(false);
   }, [location]);
 
@@ -27,7 +27,9 @@ export default function Navbar() {
   // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [menuOpen]);
 
   const checkUserStatus = async () => {
@@ -45,6 +47,18 @@ export default function Navbar() {
       setUser(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCartCount = async () => {
+    try {
+      const res = await fetch("/api/food/cart", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setCartCount(data.reduce((sum, item) => sum + item.qty, 0));
+      }
+    } catch {
+      /* ignore */
     }
   };
 
@@ -77,11 +91,15 @@ export default function Navbar() {
     <>
       <nav className={`site-navbar${scrolled ? " navbar-scrolled" : ""}`}>
         <Link to="/" className="brand">
-          <span className="brand-icon">M</span>
+          <img
+            src="/brand-logo.png"
+            alt="Food Truck Logo"
+            className="brand-icon"
+          />
           <span className="brand-text">MANU</span>
         </Link>
 
-        <div className="nav-center">
+        <div className="nav-center"> 
           <ul className="nav-menu">
             <li>
               <Link to="/" className={isActive("/") ? "active" : ""}>
@@ -94,15 +112,23 @@ export default function Navbar() {
               </Link>
             </li>
             <li>
-              <Link to="/cart" className={`cart-link${isActive("/cart") ? " active" : ""}`}>
+              <Link
+                to="/cart"
+                className={`cart-link${isActive("/cart") ? " active" : ""}`}
+              >
                 <i className="fa-solid fa-bag-shopping"></i>
                 Cart
-                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                {cartCount > 0 && (
+                  <span className="cart-badge">{cartCount}</span>
+                )}
               </Link>
             </li>
             {user && (
               <li>
-                <Link to="/my-orders" className={isActive("/my-orders") ? "active" : ""}>
+                <Link
+                  to="/my-orders"
+                  className={isActive("/my-orders") ? "active" : ""}
+                >
                   Orders
                 </Link>
               </li>
@@ -163,7 +189,10 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile overlay menu */}
-      <div className={`mobile-overlay${menuOpen ? " show" : ""}`} onClick={() => setMenuOpen(false)}></div>
+      <div
+        className={`mobile-overlay${menuOpen ? " show" : ""}`}
+        onClick={() => setMenuOpen(false)}
+      ></div>
       <div className={`mobile-menu${menuOpen ? " show" : ""}`}>
         <div className="mobile-menu-inner">
           <form className="mobile-search" onSubmit={handleSearch}>
@@ -177,28 +206,77 @@ export default function Navbar() {
           </form>
 
           <ul className="mobile-nav-links">
-            <li><Link to="/" className={isActive("/") ? "active" : ""} onClick={() => setMenuOpen(false)}>Home</Link></li>
-            <li><Link to="/menu" className={isActive("/menu") ? "active" : ""} onClick={() => setMenuOpen(false)}>Menu</Link></li>
             <li>
-              <Link to="/cart" className={isActive("/cart") ? "active" : ""} onClick={() => setMenuOpen(false)}>
-                Cart {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+              <Link
+                to="/"
+                className={isActive("/") ? "active" : ""}
+                onClick={() => setMenuOpen(false)}
+              >
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/menu"
+                className={isActive("/menu") ? "active" : ""}
+                onClick={() => setMenuOpen(false)}
+              >
+                Menu
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/cart"
+                className={isActive("/cart") ? "active" : ""}
+                onClick={() => setMenuOpen(false)}
+              >
+                Cart{" "}
+                {cartCount > 0 && (
+                  <span className="cart-badge">{cartCount}</span>
+                )}
               </Link>
             </li>
             {user && (
-              <li><Link to="/my-orders" className={isActive("/my-orders") ? "active" : ""} onClick={() => setMenuOpen(false)}>My Orders</Link></li>
+              <li>
+                <Link
+                  to="/my-orders"
+                  className={isActive("/my-orders") ? "active" : ""}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  My Orders
+                </Link>
+              </li>
             )}
             {user?.role === "admin" && (
-              <li><Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: "var(--primary)" }}>
-                <i className="fa-solid fa-shield-halved"></i> Admin Panel
-              </Link></li>
+              <li>
+                <Link
+                  to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  style={{ color: "var(--primary)" }}
+                >
+                  <i className="fa-solid fa-shield-halved"></i> Admin Panel
+                </Link>
+              </li>
             )}
           </ul>
 
           <div className="mobile-auth">
             {!loading && !user ? (
               <>
-                <Link to="/login" className="btn-nav btn-login" onClick={() => setMenuOpen(false)}>Sign in</Link>
-                <Link to="/signup" className="btn-nav btn-signup" onClick={() => setMenuOpen(false)}>Sign up</Link>
+                <Link
+                  to="/login"
+                  className="btn-nav btn-login"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/signup"
+                  className="btn-nav btn-signup"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign up
+                </Link>
               </>
             ) : !loading && user ? (
               <>
@@ -206,7 +284,15 @@ export default function Navbar() {
                   <i className="fa-solid fa-circle-user"></i>
                   {user.name || user.email?.split("@")[0]}
                 </span>
-                <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="btn-nav btn-logout">Logout</button>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMenuOpen(false);
+                  }}
+                  className="btn-nav btn-logout"
+                >
+                  Logout
+                </button>
               </>
             ) : null}
           </div>

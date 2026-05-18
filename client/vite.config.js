@@ -15,6 +15,10 @@ export default defineConfig({
         target: "http://localhost:5000",
         changeOrigin: true,
       },
+      "^/.*\\.(png|jpg|jpeg|gif|svg|webp)$": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
     },
   },
 });

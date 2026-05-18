@@ -21,6 +21,32 @@
   font-size: 1.4rem;
 }
 
+/* Sync notice */
+.orders-sync-notice {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 20px;
+}
+
+.orders-sync-notice i {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .orders-loading {
   text-align: center;
   padding: 80px 20px;

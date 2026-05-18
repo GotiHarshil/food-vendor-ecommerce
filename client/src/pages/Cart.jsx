@@ -15,6 +15,8 @@ export default function Cart() {
   const [orderNote, setOrderNote] = useState("");
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [user, setUser] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     fetchCart();
@@ -52,6 +54,12 @@ export default function Cart() {
     }
   };
 
+  const showErrorMessage = (message) => {
+    setErrorMsg(message);
+    setShowError(true);
+    setTimeout(() => setShowError(false), 4000);
+  };
+
   const handleQtyChange = (itemId, newQty) => {
     setQtyInputs((prev) => ({ ...prev, [itemId]: newQty }));
   };
@@ -70,9 +78,15 @@ export default function Cart() {
         body: `action=set&qty=${newQty}`,
         credentials: "include",
       });
-      if (response.ok) await fetchCart();
+      if (response.ok) {
+        await fetchCart();
+      } else {
+        const data = await response.json();
+        showErrorMessage(data.error || "Failed to update item quantity");
+      }
     } catch (err) {
       console.error("Update error:", err);
+      showErrorMessage("Network error. Please try again.");
     }
   };
 
@@ -84,9 +98,15 @@ export default function Cart() {
         headers: { "X-Requested-With": "XMLHttpRequest" },
         credentials: "include",
       });
-      if (response.ok) await fetchCart();
+      if (response.ok) {
+        await fetchCart();
+      } else {
+        const data = await response.json();
+        showErrorMessage(data.error || "Failed to remove item");
+      }
     } catch (err) {
       console.error("Remove error:", err);
+      showErrorMessage("Network error. Please try again.");
     } finally {
       setRemovingId(null);
     }
@@ -98,7 +118,14 @@ export default function Cart() {
       return;
     }
 
+    if (cartItems.length === 0) {
+      setError("Your cart is empty");
+      return;
+    }
+
     setCheckingOut(true);
+    setError(null);
+
     try {
       const response = await fetch("/api/food/checkout", {
         method: "POST",
@@ -108,14 +135,30 @@ export default function Cart() {
       });
       const data = await response.json();
 
-      if (response.ok) {
-        setOrderSuccess(data);
-        setCartItems([]);
+      if (response.ok && data.order) {
+        console.log("[Cart] Checkout successful, navigating to confirmation");
+        // Navigate to confirmation page with order data
+        navigate("/order-confirmation", {
+          state: { order: data.order },
+          replace: true,
+        });
       } else {
-        alert(data.error || "Checkout failed");
+        // Better error messages based on error type
+        let errorMsg = data.error || "Checkout failed. Please try again.";
+        if (data.error?.includes("limit")) {
+          errorMsg = "⚠️ Cart limit exceeded. Please remove some items.";
+        } else if (data.error?.includes("item")) {
+          errorMsg = "⚠️ One or more items are no longer available.";
+        } else if (data.error?.includes("closed")) {
+          errorMsg = "🕐 The store is currently closed. Please try again later.";
+        }
+        setError(errorMsg);
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err) {
-      alert("Something went wrong. Please try again.");
+      console.error("[Cart] Checkout error:", err);
+      setError("❌ Network error. Please check your connection and try again.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setCheckingOut(false);
     }
@@ -124,44 +167,6 @@ export default function Cart() {
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0);
   const itemCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
 
-  // Order success view
-  if (orderSuccess) {
-    return (
-      <div className="cart-page">
-        <div className="order-success">
-          <div className="success-icon">
-            <i className="fa-solid fa-circle-check"></i>
-          </div>
-          <h2>Order Placed!</h2>
-          <p className="success-msg">
-            Your order has been received. We'll notify you when it's ready for <strong>self-pickup</strong>.
-          </p>
-          <div className="success-details">
-            <div className="success-row">
-              <span>Order Total</span>
-              <span>${orderSuccess.order?.subtotal?.toFixed(2)}</span>
-            </div>
-            <div className="success-row">
-              <span>Status</span>
-              <span className="status-badge status-pending">Pending</span>
-            </div>
-            <div className="success-row">
-              <span>Pickup at</span>
-              <span>42W 46th Street, NY 10036</span>
-            </div>
-          </div>
-          <div className="success-actions">
-            <Link to="/my-orders" className="btn-success-primary">
-              <i className="fa-solid fa-receipt"></i> View My Orders
-            </Link>
-            <Link to="/menu" className="btn-success-secondary">
-              Order More
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -188,6 +193,13 @@ export default function Cart() {
 
   return (
     <div className="cart-page">
+      {showError && (
+        <div className="error-toast">
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       <div className="cart-header">
         <h1>
           <i className="fa-solid fa-bag-shopping"></i> Your Cart

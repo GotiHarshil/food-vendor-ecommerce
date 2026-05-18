@@ -6,6 +6,7 @@ const StoreSettings = require("../models/StoreSettings");
 const { broadcastOrders } = require("./adminController");
 const { sanitizeOrder } = require("../utils/sanitize");
 const { logAudit } = require("../utils/audit");
+const { sendEmail, emailTemplates } = require("../utils/emailService");
 
 // helper
 function getVisitorId(req) {
@@ -112,9 +113,30 @@ module.exports.addToCart = async (req, res, next) => {
       }
       return res.redirect("back");
     }
+
+    // Check total cart items limit (40)
+    const allCartItems = await CartItem.find({ userId });
+    const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
+    if (currentTotal >= 40) {
+      if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
+        return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
+      }
+      return res.redirect("back");
+    }
+
     item.qty += 1;
     await item.save();
   } else {
+    // Check total cart items limit (40) for new item
+    const allCartItems = await CartItem.find({ userId });
+    const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
+    if (currentTotal >= 40) {
+      if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
+        return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
+      }
+      return res.redirect("back");
+    }
+
     item = await CartItem.create({
       userId,
       foodId,
@@ -152,6 +174,15 @@ module.exports.updateCart = async (req, res) => {
       if (wantsJson) return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
       return res.redirect("back");
     }
+
+    // Check total cart items limit (40)
+    const allCartItems = await CartItem.find({ userId });
+    const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
+    if (currentTotal >= 40) {
+      if (wantsJson) return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
+      return res.redirect("back");
+    }
+
     item.qty++;
   } else if (action === "dec") {
     item.qty--;
@@ -170,6 +201,17 @@ module.exports.updateCart = async (req, res) => {
     if (newQty > 15) {
       if (wantsJson) return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
       return res.redirect("back");
+    }
+
+    // Check total cart items limit (40) when increasing quantity via set
+    if (newQty > item.qty) {
+      const allCartItems = await CartItem.find({ userId });
+      const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
+      const increaseBy = newQty - item.qty;
+      if (currentTotal + increaseBy > 40) {
+        if (wantsJson) return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
+        return res.redirect("back");
+      }
     }
     item.qty = newQty;
   }
@@ -227,6 +269,10 @@ module.exports.checkout = async (req, res) => {
 
   // Notify connected admin clients of the new order
   broadcastOrders().catch(console.error);
+
+  // Send confirmation email
+  const emailContent = emailTemplates.orderConfirmation(order, req.user);
+  sendEmail(req.user.email, emailContent.subject, emailContent.html).catch(console.error);
 
   // Audit log
   logAudit(req, "ORDER_CREATED", "Order", order._id, { subtotal: order.subtotal, itemCount: order.items.length });

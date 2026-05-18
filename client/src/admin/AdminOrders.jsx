@@ -39,26 +39,77 @@ export default function AdminOrders() {
     // Always load orders immediately via regular HTTP
     fetchOrders();
 
-    // In dev, bypass Vite proxy (which drops long-lived SSE connections) and
-    // connect directly to the Express server. In production there is no proxy.
+    let esInstance = null;
+
+    // Check if user is authenticated and is admin
     const sseBase = import.meta.env.DEV ? "http://localhost:5000" : "";
-    const es = new EventSource(`${sseBase}/api/admin/orders/stream`, {
-      withCredentials: true,
-    });
 
-    es.onopen = () => setConnected(true);
+    // First, verify authentication status
+    fetch(`${sseBase}/api/admin/health`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("[AdminOrders] Auth check:", data);
+        if (!data.authenticated || data.role !== "admin") {
+          console.error("[AdminOrders] User is not authenticated as admin");
+          setConnected(false);
+          return;
+        }
 
-    es.onmessage = (e) => {
-      try {
-        setAllOrders(JSON.parse(e.data));
-        setLoading(false);
-      } catch (_) {}
+        // User is authenticated, try SSE connection
+        const sseUrl = `${sseBase}/api/admin/orders/stream`;
+        console.log(`[AdminOrders] Connecting to SSE: ${sseUrl}`);
+
+        esInstance = new EventSource(sseUrl, {
+          withCredentials: true,
+        });
+
+        esInstance.onopen = () => {
+          console.log("[AdminOrders] SSE connection opened");
+          setConnected(true);
+        };
+
+        esInstance.onmessage = (e) => {
+          try {
+            if (e.data.startsWith(":")) {
+              // Ignore ping messages
+              return;
+            }
+            const orders = JSON.parse(e.data);
+            console.log("[AdminOrders] Received SSE message with", orders.length, "orders");
+            setAllOrders(orders);
+            setLoading(false);
+          } catch (err) {
+            console.error("[AdminOrders] Error parsing SSE message:", err);
+          }
+        };
+
+        esInstance.onerror = (err) => {
+          console.error("[AdminOrders] SSE connection error:", err);
+          console.error("[AdminOrders] EventSource readyState:", esInstance.readyState);
+          setConnected(false);
+        };
+      })
+      .catch((err) => {
+        console.error("[AdminOrders] Error checking auth:", err);
+        setConnected(false);
+      });
+
+    // Fallback: Poll for orders every 5 seconds if SSE is not connected
+    const pollInterval = setInterval(() => {
+      if (!connected) {
+        console.log("[AdminOrders] Polling for orders (SSE not connected)");
+        fetchOrders();
+      }
+    }, 5000);
+
+    return () => {
+      console.log("[AdminOrders] Cleaning up SSE and poll interval");
+      if (esInstance) {
+        esInstance.close();
+      }
+      clearInterval(pollInterval);
     };
-
-    es.onerror = () => setConnected(false);
-
-    return () => es.close();
-  }, [fetchOrders]);
+  }, [fetchOrders, connected]);
 
   const orders = filter === "all"
     ? allOrders

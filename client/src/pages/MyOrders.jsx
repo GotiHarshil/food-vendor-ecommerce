@@ -14,12 +14,35 @@ export default function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch(`/api/food/my-orders?t=${Date.now()}`, {
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/food/my-orders", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setOrders(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Initial fetch
+    fetchOrders().then(() => setLoading(false));
+
+    // Poll every 3 seconds for updates
+    const pollInterval = setInterval(fetchOrders, 3000);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
   }, []);
 
   if (loading) {
@@ -37,6 +60,11 @@ export default function MyOrders() {
     <div className="orders-page">
       <div className="orders-header">
         <h1><i className="fa-solid fa-receipt"></i> My Orders</h1>
+      </div>
+
+      <div className="orders-sync-notice">
+        <i className="fa-solid fa-sync"></i>
+        <span>Live status updates (every 3 seconds)</span>
       </div>
 
       {orders.length === 0 ? (
