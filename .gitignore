@@ -33,3 +33,9 @@ server/graphify-out/
 CLOUDINARY_SETUP.md
 
 EMAIL_SETUP.md
+
+# graphify temporary files
+.graphify_*.json
+.graphify_*.py
+.graphify_python
+graphify-out/
