@@ -139,3 +139,81 @@ module.exports.getUserStatus = (req, res) => {
     res.status(401).json({ success: false, message: "Not logged in" });
   }
 };
+
+// Get user profile
+module.exports.getProfile = async (req, res) => {
+  res.json({
+    name: req.user.name,
+    email: req.user.email,
+    phone: req.user.phone || "",
+    role: req.user.role || "customer",
+    createdAt: req.user.createdAt,
+  });
+};
+
+// Update user profile
+module.exports.updateProfile = async (req, res) => {
+  const { name, phone } = req.body;
+
+  if (!name || name.trim() === "") {
+    return res.status(400).json({ error: "Name cannot be empty" });
+  }
+
+  req.user.name = name.trim();
+  req.user.phone = (phone || "").trim();
+  await req.user.save();
+
+  res.json({
+    success: true,
+    message: "Profile updated successfully",
+    user: {
+      name: req.user.name,
+      email: req.user.email,
+      phone: req.user.phone,
+    },
+  });
+};
+
+// Change password
+module.exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Please provide both passwords" });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "New password must be at least 6 characters" });
+  }
+
+  try {
+    await req.user.changePassword(currentPassword, newPassword);
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (err) {
+    if (err.message === "Password incorrect") {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+    res.status(500).json({ error: err.message || "Failed to change password" });
+  }
+};
+
+// Get user favorites
+module.exports.getFavorites = async (req, res) => {
+  await req.user.populate("favorites");
+  res.json(req.user.favorites || []);
+};
+
+// Toggle favorite
+module.exports.toggleFavorite = async (req, res) => {
+  const { foodId } = req.params;
+
+  const idx = req.user.favorites.indexOf(foodId);
+  if (idx === -1) {
+    req.user.favorites.push(foodId);
+  } else {
+    req.user.favorites.splice(idx, 1);
+  }
+
+  await req.user.save();
+  res.json({ success: true, favorited: idx === -1 });
+};

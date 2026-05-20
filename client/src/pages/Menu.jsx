@@ -39,6 +39,9 @@ export default function Menu() {
   const searchQuery = searchParams.get("search") || "";
   const sectionRefs = useRef({});
   const { refreshCart } = useCart();
+  const [favoritedIds, setFavoritedIds] = useState(new Set());
+  const [orders, setOrders] = useState([]);
+  const [recommendedCategory, setRecommendedCategory] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -46,9 +49,11 @@ export default function Menu() {
 
   const fetchData = async () => {
     try {
-      const [foodsRes, cartRes] = await Promise.all([
+      const [foodsRes, cartRes, favRes, ordersRes] = await Promise.all([
         fetch("/api/food/menu", { credentials: "include" }),
         fetch("/api/food/cart", { credentials: "include" }),
+        fetch("/api/user/favorites", { credentials: "include" }),
+        fetch("/api/food/my-orders", { credentials: "include" }),
       ]);
 
       if (!foodsRes.ok) throw new Error("Failed to fetch menu");
@@ -56,8 +61,44 @@ export default function Menu() {
       const foodsData = await foodsRes.json();
       const cartData = cartRes.ok ? await cartRes.json() : [];
 
+      // Fetch favorites (ok if 401 - guest user)
+      let favoriteIds = new Set();
+      if (favRes.ok) {
+        const favData = await favRes.json();
+        favoriteIds = new Set(favData.map((f) => String(f._id)));
+      }
+
+      // Fetch orders (ok if 401 - guest user)
+      let ordersData = [];
+      if (ordersRes.ok) {
+        ordersData = await ordersRes.json();
+      }
+
       setFoods(foodsData);
       setCartItems(cartData);
+      setFavoritedIds(favoriteIds);
+      setOrders(ordersData);
+
+      // Calculate recommendations
+      if (ordersData.length > 0) {
+        const categoryCounts = {};
+        ordersData.forEach((order) => {
+          order.items?.forEach((item) => {
+            const food = foodsData.find((f) => String(f._id) === String(item.foodId));
+            if (food) {
+              categoryCounts[food.category] = (categoryCounts[food.category] || 0) + 1;
+            }
+          });
+        });
+
+        if (Object.keys(categoryCounts).length > 0) {
+          const topCategory = Object.keys(categoryCounts).reduce((a, b) =>
+            categoryCounts[a] > categoryCounts[b] ? a : b
+          );
+          setRecommendedCategory(topCategory);
+        }
+      }
+
       refreshCart();
     } catch (err) {
       setError(err.message);
@@ -95,7 +136,26 @@ export default function Menu() {
     window.scrollTo({ top: 200, behavior: "smooth" });
   };
 
+  const handleToggleFavorite = (foodId) => {
+    const newSet = new Set(favoritedIds);
+    if (newSet.has(String(foodId))) {
+      newSet.delete(String(foodId));
+    } else {
+      newSet.add(String(foodId));
+    }
+    setFavoritedIds(newSet);
+  };
+
   const totalItems = displayFoods.length;
+
+  // Get recommended items
+  const recommendedItems = recommendedCategory
+    ? foods.filter(
+        (f) =>
+          f.category === recommendedCategory &&
+          !cartItems.some((item) => String(item.foodId) === String(f._id))
+      ).slice(0, 4)
+    : [];
 
   return (
     <div className="menu-page">
@@ -156,16 +216,41 @@ export default function Menu() {
           </div>
         ) : activeCategory !== "all" ? (
           /* Single category view */
-          <div className="menu-grid stagger">
-            {displayFoods.map((food) => (
-              <FoodCard
-                key={food._id}
-                food={food}
-                cartItems={cartItems}
-                onUpdate={fetchData}
-              />
-            ))}
-          </div>
+          <>
+            {recommendedItems.length > 0 && (
+              <div className="recommended-section">
+                <div className="recommended-header">
+                  <i className="fa-solid fa-heart"></i>
+                  <span>Based on your orders</span>
+                </div>
+                <div className="recommended-scroll">
+                  {recommendedItems.map((food) => (
+                    <div key={food._id} className="recommended-card">
+                      <FoodCard
+                        food={food}
+                        cartItems={cartItems}
+                        onUpdate={fetchData}
+                        isFavorited={favoritedIds.has(String(food._id))}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="menu-grid stagger">
+              {displayFoods.map((food) => (
+                <FoodCard
+                  key={food._id}
+                  food={food}
+                  cartItems={cartItems}
+                  onUpdate={fetchData}
+                  isFavorited={favoritedIds.has(String(food._id))}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))}
+            </div>
+          </>
         ) : (
           /* All categories grouped */
           <div className="menu-sections stagger">
@@ -190,6 +275,8 @@ export default function Menu() {
                           food={food}
                           cartItems={cartItems}
                           onUpdate={fetchData}
+                          isFavorited={favoritedIds.has(String(food._id))}
+                          onToggleFavorite={handleToggleFavorite}
                         />
                       ))}
                     </div>

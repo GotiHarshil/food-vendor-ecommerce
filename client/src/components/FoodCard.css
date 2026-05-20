@@ -277,6 +277,46 @@
   }
 }
 
+/* Favorite button */
+.card-favorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease-out);
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-favorite-btn:hover {
+  transform: scale(1.1);
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-favorite-btn.active {
+  color: #ef4444;
+}
+
+.card-favorite-btn.active:hover {
+  animation: heartBeat 0.4s var(--ease-spring);
+}
+
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1.1); }
+  50% { transform: scale(1.25); }
+}
+
 @media (max-width: 640px) {
   .error-toast {
     top: 60px;

@@ -40,6 +40,7 @@ router.get("/orders/stream", adminController.streamOrders);
 router.get("/orders", wrapAsync(adminController.getAllOrders));
 router.put("/orders/:id/status", wrapAsync(adminController.updateOrderStatus));
 router.post("/orders/:id/cancel", wrapAsync(adminController.cancelOrder));
+router.post("/orders/:id/translate", wrapAsync(adminController.translateOrderNote));
 
 // Users
 router.get("/users", wrapAsync(adminController.getAllUsers));

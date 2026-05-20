@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import SearchDropdown from "./SearchDropdown";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -9,8 +10,10 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const searchWrapperRef = useRef(null);
 
   useEffect(() => {
     checkUserStatus();
@@ -31,6 +34,20 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [menuOpen]);
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target)) {
+        setSearchFocused(false);
+      }
+    };
+
+    if (searchFocused) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [searchFocused]);
 
   const checkUserStatus = async () => {
     try {
@@ -145,15 +162,26 @@ export default function Navbar() {
         </div>
 
         <div className="nav-right">
-          <form className="nav-search" onSubmit={handleSearch}>
-            <i className="fa-solid fa-magnifying-glass search-icon"></i>
-            <input
-              type="text"
-              placeholder="Search dishes..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+          <div className="nav-search-wrapper" ref={searchWrapperRef}>
+            <form className="nav-search" onSubmit={handleSearch}>
+              <i className="fa-solid fa-magnifying-glass search-icon"></i>
+              <input
+                type="text"
+                placeholder="Search dishes..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+              />
+            </form>
+            <SearchDropdown
+              query={query}
+              onSelect={() => {
+                setQuery("");
+                setSearchFocused(false);
+              }}
+              isFocused={searchFocused}
             />
-          </form>
+          </div>
 
           {!loading && !user ? (
             <div className="auth-buttons">
@@ -166,6 +194,9 @@ export default function Navbar() {
             </div>
           ) : !loading && user ? (
             <div className="auth-buttons">
+              <Link to="/profile" className="btn-profile" title="View Profile">
+                <i className="fa-solid fa-user"></i>
+              </Link>
               <span className="user-greeting">
                 <i className="fa-solid fa-circle-user"></i>
                 {user.name || user.email?.split("@")[0]}
@@ -237,15 +268,27 @@ export default function Navbar() {
               </Link>
             </li>
             {user && (
-              <li>
-                <Link
-                  to="/my-orders"
-                  className={isActive("/my-orders") ? "active" : ""}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  My Orders
-                </Link>
-              </li>
+              <>
+                <li>
+                  <Link
+                    to="/profile"
+                    className={isActive("/profile") ? "active" : ""}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <i className="fa-solid fa-user"></i>
+                    Profile
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/my-orders"
+                    className={isActive("/my-orders") ? "active" : ""}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    My Orders
+                  </Link>
+                </li>
+              </>
             )}
             {user?.role === "admin" && (
               <li>

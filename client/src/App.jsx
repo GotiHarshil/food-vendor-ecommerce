@@ -13,6 +13,7 @@ import OrderDetails from "./pages/OrderDetails";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MyOrders from "./pages/MyOrders";
+import Profile from "./pages/Profile";
 
 // Admin
 import AdminLayout from "./admin/AdminLayout";
@@ -51,6 +52,7 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/my-orders" element={<MyOrders />} />
+                  <Route path="/profile" element={<Profile />} />
                 </Routes>
               </main>
               <FloatingCart />

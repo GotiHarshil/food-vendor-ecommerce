@@ -21,7 +21,8 @@ const orderSchema = new mongoose.Schema(
       enum: ["pending", "preparing", "ready", "picked_up", "cancelled"],
       default: "pending",
     },
-    note: String, // customer note
+    note: String,      // customer note (English)
+    noteHindi: String, // AI-translated note (Hindi)
     adminNote: String, // admin note (e.g. cancellation reason)
     readyNotifiedAt: Date, // when customer was notified order is ready
   },

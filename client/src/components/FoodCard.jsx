@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./FoodCard.css";
 
-export default function FoodCard({ food, cartItems = [], onUpdate }) {
+export default function FoodCard({ food, cartItems = [], onUpdate, isFavorited = false, onToggleFavorite }) {
+  const navigate = useNavigate();
   const [currentQty, setCurrentQty] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showError, setShowError] = useState(false);
+  const [favorited, setFavorited] = useState(isFavorited);
 
   useEffect(() => {
     const found = cartItems.find(
@@ -15,10 +18,45 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
     setCurrentQty(found ? found.qty : 0);
   }, [cartItems, food._id]);
 
+  useEffect(() => {
+    setFavorited(isFavorited);
+  }, [isFavorited]);
+
   const showErrorMessage = (message) => {
     setErrorMsg(message);
     setShowError(true);
     setTimeout(() => setShowError(false), 4000);
+  };
+
+  const handleToggleFavorite = async (e) => {
+    e.stopPropagation();
+
+    // Check if user is logged in by attempting the API call
+    setFavorited(!favorited);
+
+    try {
+      const response = await fetch(`/api/user/favorites/${food._id}`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (response.status === 401) {
+        // Not logged in, revert and redirect
+        setFavorited(favorited);
+        navigate("/login");
+      } else if (!response.ok) {
+        // Revert on error
+        setFavorited(favorited);
+        showErrorMessage("Failed to update favorite");
+      } else {
+        // Success - call the callback if provided
+        onToggleFavorite?.(food._id);
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      setFavorited(favorited);
+      showErrorMessage("Network error. Please try again.");
+    }
   };
 
   const handleAddToCart = async () => {
@@ -91,6 +129,13 @@ export default function FoodCard({ food, cartItems = [], onUpdate }) {
 
       <div className="card-image">
         <img src={food.imageUrl} alt={food.name} loading="lazy" />
+        <button
+          className={`card-favorite-btn${favorited ? " active" : ""}`}
+          onClick={handleToggleFavorite}
+          title={favorited ? "Remove favorite" : "Add to favorites"}
+        >
+          <i className={`fa-${favorited ? "solid" : "regular"} fa-heart`}></i>
+        </button>
         <div className="card-category-badge">
           {food.category}
         </div>

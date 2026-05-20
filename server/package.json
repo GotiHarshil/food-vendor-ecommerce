@@ -8,6 +8,7 @@
     "seed": "node seed.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "connect-flash": "^0.1.1",

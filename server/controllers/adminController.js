@@ -8,6 +8,7 @@ const AuditLog = require("../models/AuditLog");
 const { logAudit } = require("../utils/audit");
 const { uploadToCloudinary } = require("../utils/uploadToCloudinary");
 const { sendEmail, emailTemplates, statusInfo } = require("../utils/emailService");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 // SSE clients for real-time order push
 const sseClients = new Set();
@@ -399,4 +400,55 @@ module.exports.getAuditLogs = async (req, res) => {
   const total = await AuditLog.countDocuments(filter);
 
   res.json({ logs, total, page: Number(page), pages: Math.ceil(total / limit) });
+};
+
+// ─── TRANSLATE ORDER NOTE ─────────────────────────────────────
+async function translateWithGemini(text) {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+  const prompt = `Translate the following customer food order special request from English to Hindi. Return only the Hindi translation, no explanations or extra text.\n\n"${text}"`;
+  const result = await model.generateContent(prompt);
+  return result.response.text().trim();
+}
+
+async function translateWithMyMemory(text) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|hi`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`MyMemory HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.responseStatus !== 200) throw new Error(`MyMemory error: ${data.responseDetails}`);
+  return data.responseData.translatedText;
+}
+
+module.exports.translateOrderNote = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order.note) return res.status(400).json({ message: "No note to translate" });
+
+    // Return cached translation if already exists
+    if (order.noteHindi) return res.json({ noteHindi: order.noteHindi });
+
+    let noteHindi;
+    let source = "gemini";
+
+    // Try Gemini first, fall back to MyMemory if quota/error
+    try {
+      noteHindi = await translateWithGemini(order.note);
+      console.log("[Translate] Gemini success");
+    } catch (geminiErr) {
+      console.warn("[Translate] Gemini failed, using MyMemory fallback:", geminiErr.message.slice(0, 80));
+      noteHindi = await translateWithMyMemory(order.note);
+      source = "mymemory";
+      console.log("[Translate] MyMemory success");
+    }
+
+    order.noteHindi = noteHindi;
+    await order.save();
+
+    res.json({ noteHindi, source });
+  } catch (err) {
+    console.error("[Translate] All translation methods failed:", err.message);
+    res.status(500).json({ message: "Translation failed. Please try again." });
+  }
 };

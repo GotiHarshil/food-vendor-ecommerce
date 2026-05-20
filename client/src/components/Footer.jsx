@@ -17,14 +17,21 @@ export default function Footer() {
           </p>
 
           <div className="f-socials">
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+            <a
+              href="https://facebook.com/profile.php?id=61560783634129"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+            >
               <i className="fa-brands fa-facebook-f"></i>
             </a>
-            <a href="https://www.instagram.com/thedabelistation/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <a
+              href="https://www.instagram.com/thedabelistation/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+            >
               <i className="fa-brands fa-instagram"></i>
-            </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-              <i className="fa-brands fa-x-twitter"></i>
             </a>
           </div>
         </div>
@@ -33,7 +40,7 @@ export default function Footer() {
           <h4 className="f-heading">Quick Links</h4>
           <nav className="f-links">
             <Link to="/">Home</Link>
-            <Link to="/menu">Menu</Link>
+            <Link to="/menu">Menu</Link>.
             <Link to="/cart">Cart</Link>
             <Link to="/login">Sign In</Link>
           </nav>

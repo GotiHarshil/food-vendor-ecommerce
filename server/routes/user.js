@@ -3,7 +3,7 @@ const router = express.Router({ mergeParams: true });
 // const User = require("../models/user.js");
 const wrapAsync = require("../utils/wrapAsync");
 const passport = require("passport");
-const { saveRedirectUrl } = require("../middleware.js");
+const { saveRedirectUrl, isLoggedIn } = require("../middleware.js");
 const { authLimiter, adminLoginBypass } = require("../middleware/rateLimiter");
 
 const userController = require("../controllers/users.js");
@@ -68,5 +68,27 @@ router
   .route("/api/user/status")
   //API JSON endpoint to check user login status
   .get(userController.getUserStatus);
+
+router
+  .route("/api/user/profile")
+  //Get user profile
+  .get(isLoggedIn, wrapAsync(userController.getProfile))
+  //Update user profile
+  .put(isLoggedIn, wrapAsync(userController.updateProfile));
+
+router
+  .route("/api/user/password")
+  //Change password
+  .put(isLoggedIn, wrapAsync(userController.changePassword));
+
+router
+  .route("/api/user/favorites")
+  //Get user favorites
+  .get(isLoggedIn, wrapAsync(userController.getFavorites));
+
+router
+  .route("/api/user/favorites/:foodId")
+  //Toggle favorite
+  .post(isLoggedIn, wrapAsync(userController.toggleFavorite));
 
 module.exports = router;

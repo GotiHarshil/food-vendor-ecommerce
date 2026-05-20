@@ -249,6 +249,48 @@
   border-radius: 6px;
 }
 
+/* Recommended Section */
+.recommended-section {
+  margin-bottom: 40px;
+  padding: 0 0 28px 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.recommended-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.recommended-header i {
+  color: #ef4444;
+  font-size: 1.2rem;
+}
+
+.recommended-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none; /* Firefox */
+}
+
+.recommended-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.recommended-card {
+  flex: 0 0 minmax(200px, 200px);
+}
+
+.recommended-card .food-card {
+  height: 100%;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .menu-grid {

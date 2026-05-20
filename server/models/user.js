@@ -16,6 +16,16 @@ const userSchema = new Schema({
     enum: ["customer", "admin"],
     default: "customer",
   },
+  phone: {
+    type: String,
+    default: "",
+  },
+  favorites: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Food",
+    },
+  ],
 }, { timestamps: true });
 
 // Configure passport-local-mongoose to use the `email` field as the username

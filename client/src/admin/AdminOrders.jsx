@@ -24,6 +24,7 @@ export default function AdminOrders() {
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [cancelReason, setCancelReason] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
+  const [translating, setTranslating] = useState(null);
 
   const fetchOrders = useCallback(() => {
     fetch("/api/admin/orders?limit=100", { credentials: "include" })
@@ -135,6 +136,26 @@ export default function AdminOrders() {
       if (res.ok) fetchOrders();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleTranslate = async (orderId) => {
+    setTranslating(orderId);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/translate`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAllOrders((prev) =>
+          prev.map((o) => o._id === orderId ? { ...o, noteHindi: data.noteHindi } : o)
+        );
+      }
+    } catch (err) {
+      console.error("Translation failed:", err);
+    } finally {
+      setTranslating(null);
     }
   };
 
@@ -253,8 +274,35 @@ export default function AdminOrders() {
                   </div>
 
                   {order.note && (
-                    <div style={{ padding: "0 20px 10px", fontSize: "0.88rem", color: "var(--text-secondary)" }}>
-                      <strong>Customer note:</strong> {order.note}
+                    <div style={{ padding: "0 20px 14px" }}>
+                      <div style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginBottom: "8px" }}>
+                        <strong>Customer note:</strong> {order.note}
+                      </div>
+                      {order.noteHindi ? (
+                        <div style={{
+                          fontSize: "0.92rem", background: "#f0f4ff", padding: "10px 14px",
+                          borderRadius: "8px", borderLeft: "3px solid #4f46e5",
+                          color: "#1a1a2e", fontFamily: "sans-serif",
+                        }}>
+                          <strong style={{ color: "#4f46e5" }}>हिंदी:</strong> {order.noteHindi}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleTranslate(order._id)}
+                          disabled={translating === order._id}
+                          style={{
+                            padding: "6px 14px", fontSize: "0.82rem", fontWeight: 600,
+                            background: translating === order._id ? "#a5b4fc" : "#4f46e5",
+                            color: "white", border: "none", borderRadius: "6px",
+                            cursor: translating === order._id ? "not-allowed" : "pointer",
+                            display: "inline-flex", alignItems: "center", gap: "6px",
+                            transition: "background 0.2s",
+                          }}
+                        >
+                          <i className="fa-solid fa-language"></i>
+                          {translating === order._id ? "Translating..." : "Translate to Hindi"}
+                        </button>
+                      )}
                     </div>
                   )}
 
