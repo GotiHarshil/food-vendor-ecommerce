@@ -39,3 +39,6 @@ EMAIL_SETUP.md
 .graphify_*.py
 .graphify_python
 graphify-out/
+
+
+/playwright-report/
