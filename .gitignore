@@ -42,3 +42,5 @@ graphify-out/
 
 
 /playwright-report/
+/.playwright-test/
+/.playwright-cli/
