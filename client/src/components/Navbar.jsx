@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import SearchDropdown from "./SearchDropdown";
+import { useCart } from "../context/CartContext";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -8,18 +9,18 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
+  const { cartCount, refreshCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const searchWrapperRef = useRef(null);
 
   useEffect(() => {
     checkUserStatus();
-    fetchCartCount();
+    refreshCart();
     setMenuOpen(false);
-  }, [location]);
+  }, [location, refreshCart]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -64,18 +65,6 @@ export default function Navbar() {
       setUser(null);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchCartCount = async () => {
-    try {
-      const res = await fetch("/api/food/cart", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setCartCount(data.reduce((sum, item) => sum + item.qty, 0));
-      }
-    } catch {
-      /* ignore */
     }
   };
 

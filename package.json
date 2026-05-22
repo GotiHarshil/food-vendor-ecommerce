@@ -5,6 +5,7 @@
     "start": "concurrently \"npm run server\" \"wait-on tcp:5000 && npm run client\""
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "baseline-browser-mapping": "^2.9.18",
     "concurrently": "^9.2.1",
     "wait-on": "^9.0.3"

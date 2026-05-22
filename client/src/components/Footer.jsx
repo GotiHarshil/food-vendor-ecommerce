@@ -40,7 +40,7 @@ export default function Footer() {
           <h4 className="f-heading">Quick Links</h4>
           <nav className="f-links">
             <Link to="/">Home</Link>
-            <Link to="/menu">Menu</Link>.
+            <Link to="/menu">Menu</Link>
             <Link to="/cart">Cart</Link>
             <Link to="/login">Sign In</Link>
           </nav>
