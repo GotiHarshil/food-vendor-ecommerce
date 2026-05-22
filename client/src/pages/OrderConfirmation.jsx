@@ -17,22 +17,6 @@ export default function OrderConfirmation() {
   const [loading, setLoading] = useState(false);
   const [syncError, setSyncError] = useState(null);
 
-  // Redirect if no order data
-  if (!order) {
-    return (
-      <div className="confirmation-page">
-        <div className="confirmation-error">
-          <i className="fa-solid fa-circle-exclamation"></i>
-          <h2>No Order Found</h2>
-          <p>We couldn't find your order. Please check your email or contact support.</p>
-          <Link to="/menu" className="btn-primary">
-            <i className="fa-solid fa-utensils"></i> Return to Menu
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   // Poll for order status updates
   useEffect(() => {
     if (!order?._id) {
@@ -108,6 +92,22 @@ export default function OrderConfirmation() {
     (sum, item) => sum + (item.price || 0) * (item.qty || 0),
     0
   ) || 0;
+
+  // Show error if no order data
+  if (!order) {
+    return (
+      <div className="confirmation-page">
+        <div className="confirmation-error">
+          <i className="fa-solid fa-circle-exclamation"></i>
+          <h2>No Order Found</h2>
+          <p>We couldn't find your order. Please check your email or contact support.</p>
+          <Link to="/menu" className="btn-primary">
+            <i className="fa-solid fa-utensils"></i> Return to Menu
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="confirmation-page">
@@ -221,8 +221,8 @@ export default function OrderConfirmation() {
               </tr>
             </thead>
             <tbody>
-              {liveOrder.items?.map((item, idx) => (
-                <tr key={idx}>
+              {liveOrder.items?.map((item) => (
+                <tr key={`${item.foodId}-${item.name}`}>
                   <td className="item-name">{item.name}</td>
                   <td className="item-qty">{item.qty}</td>
                   <td className="item-price">${(item.price || 0).toFixed(2)}</td>
@@ -295,7 +295,7 @@ export default function OrderConfirmation() {
         <div className="sync-error-notice">
           <i className="fa-solid fa-triangle-exclamation"></i>
           <span>{syncError}</span>
-          <button onClick={() => window.location.reload()} className="sync-refresh-btn">
+          <button type="button" onClick={() => window.location.reload()} className="sync-refresh-btn">
             Refresh Page
           </button>
         </div>
