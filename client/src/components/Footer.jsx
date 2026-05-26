@@ -49,9 +49,9 @@ export default function Footer() {
         <div className="f-col">
           <h4 className="f-heading">Company</h4>
           <nav className="f-links">
-            <a href="#">About Us</a>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
+            <Link to="/about">About Us</Link>
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/terms-of-service">Terms of Service</Link>
           </nav>
         </div>
 

@@ -2,12 +2,14 @@
   "scripts": {
     "server": "npm start --prefix server",
     "client": "npm run dev --prefix client",
-    "start": "concurrently \"npm run server\" \"wait-on tcp:5000 && npm run client\""
+    "start": "concurrently \"npm run server\" \"wait-on tcp:5000 && npm run client\"",
+    "doctor": "react-doctor"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "baseline-browser-mapping": "^2.9.18",
     "concurrently": "^9.2.1",
-    "wait-on": "^9.0.3"
+    "wait-on": "^9.0.3",
+    "react-doctor": "^0.2.6"
   }
 }
