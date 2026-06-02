@@ -47,6 +47,41 @@
   }
 }
 
+/* Active orders warning */
+.active-orders-warning {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #92400e;
+}
+
+.active-orders-warning i {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #d97706;
+}
+
+.warning-content {
+  flex: 1;
+}
+
+.warning-content strong {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.warning-content p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 .orders-loading {
   text-align: center;
   padding: 80px 20px;

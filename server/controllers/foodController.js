@@ -231,6 +231,19 @@ module.exports.checkout = async (req, res) => {
   }
 
   const userId = String(req.user._id);
+
+  // Check if user already has 2 incomplete orders
+  const incompleteOrders = await Order.countDocuments({
+    userId: req.user._id,
+    status: { $in: ["pending", "preparing", "ready"] }
+  });
+
+  if (incompleteOrders >= 2) {
+    return res.status(400).json({
+      error: "You already have 2 active orders. Please wait for one to be completed or picked up before placing a new order."
+    });
+  }
+
   const cartItems = await CartItem.find({ userId });
 
   if (cartItems.length === 0) {

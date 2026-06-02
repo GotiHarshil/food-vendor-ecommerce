@@ -180,12 +180,20 @@ export default function Cart() {
   }
 
   if (error) {
+    const isOrderLimitError = error.includes("active orders");
     return (
       <div className="cart-page">
         <div className="cart-error-state">
           <i className="fa-solid fa-circle-exclamation"></i>
           <p>{error}</p>
-          <button className="btn-retry" onClick={fetchCart}>Try Again</button>
+          {isOrderLimitError ? (
+            <Link to="/my-orders" className="btn-retry">
+              <i className="fa-solid fa-receipt"></i>
+              View My Orders
+            </Link>
+          ) : (
+            <button className="btn-retry" onClick={fetchCart}>Try Again</button>
+          )}
         </div>
       </div>
     );

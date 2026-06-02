@@ -56,6 +56,10 @@ export default function MyOrders() {
     );
   }
 
+  const activeOrders = orders.filter(
+    (o) => ["pending", "preparing", "ready"].includes(o.status)
+  ).length;
+
   return (
     <div className="orders-page">
       <div className="orders-header">
@@ -66,6 +70,16 @@ export default function MyOrders() {
         <i className="fa-solid fa-sync"></i>
         <span>Live status updates (every 3 seconds)</span>
       </div>
+
+      {activeOrders >= 2 && (
+        <div className="active-orders-warning">
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          <div className="warning-content">
+            <strong>Maximum Active Orders Reached</strong>
+            <p>You have {activeOrders} active orders. Complete or pick up one before placing a new order.</p>
+          </div>
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <div className="orders-empty">
