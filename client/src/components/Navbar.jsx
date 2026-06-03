@@ -196,6 +196,13 @@ export default function Navbar() {
             </div>
           ) : null}
 
+          <Link to="/cart" className="mobile-cart-icon" title="Go to Cart">
+            <i className="fa-solid fa-bag-shopping"></i>
+            {cartCount > 0 && (
+              <span className="mobile-cart-badge">{cartCount}</span>
+            )}
+          </Link>
+
           <button
             className={`hamburger${menuOpen ? " open" : ""}`}
             onClick={() => setMenuOpen(!menuOpen)}
