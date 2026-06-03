@@ -131,6 +131,7 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 /* Search */
@@ -466,8 +467,8 @@
 
 .mobile-cart-badge {
   position: absolute;
-  top: 0;
-  right: -8px;
+  top: -4px;
+  right: -4px;
   min-width: 20px;
   width: 20px;
   height: 20px;
@@ -481,6 +482,7 @@
   padding: 0;
   animation: scaleIn 0.3s var(--ease-spring);
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 /* ===== RESPONSIVE ===== */
