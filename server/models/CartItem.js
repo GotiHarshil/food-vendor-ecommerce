@@ -7,6 +7,7 @@ const CartItemSchema = new mongoose.Schema({
   price: Number,
   imageUrl: String,
   qty: { type: Number, default: 1 },
+  note: { type: String, default: "" },             // special instructions for this item
 });
 
 module.exports = mongoose.model("CartItem", CartItemSchema);

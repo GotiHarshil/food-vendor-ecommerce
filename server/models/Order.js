@@ -7,6 +7,7 @@ const orderItemSchema = new mongoose.Schema({
   price: Number,
   imageUrl: String,
   qty: { type: Number, default: 1 },
+  note: String,  // special instructions for this item
 });
 
 const orderSchema = new mongoose.Schema(

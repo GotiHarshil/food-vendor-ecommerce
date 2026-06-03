@@ -227,6 +227,7 @@
 .oi-info {
   flex: 1;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -240,6 +241,20 @@
 .oi-qty {
   font-size: 0.82rem;
   color: var(--text-muted);
+}
+
+.oi-note {
+  font-size: 0.8rem;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-basis: 100%;
+  margin-top: 2px;
+}
+
+.oi-note i {
+  font-size: 0.75rem;
 }
 
 .oi-price {

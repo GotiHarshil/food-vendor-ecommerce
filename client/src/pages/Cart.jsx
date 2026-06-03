@@ -10,6 +10,7 @@ export default function Cart() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [qtyInputs, setQtyInputs] = useState({});
+  const [itemNotes, setItemNotes] = useState({});
   const [removingId, setRemovingId] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [orderNote, setOrderNote] = useState("");
@@ -41,8 +42,13 @@ export default function Cart() {
         const data = await response.json();
         setCartItems(data);
         const inputs = {};
-        data.forEach((item) => { inputs[item._id] = item.qty; });
+        const notes = {};
+        data.forEach((item) => {
+          inputs[item._id] = item.qty;
+          notes[item._id] = item.note || "";
+        });
         setQtyInputs(inputs);
+        setItemNotes(notes);
         refreshCart();
       } else {
         setError("Failed to load cart");
@@ -62,6 +68,10 @@ export default function Cart() {
 
   const handleQtyChange = (itemId, newQty) => {
     setQtyInputs((prev) => ({ ...prev, [itemId]: newQty }));
+  };
+
+  const handleNoteChange = (itemId, noteValue) => {
+    setItemNotes((prev) => ({ ...prev, [itemId]: noteValue }));
   };
 
   const handleUpdate = async (itemId, foodId) => {
@@ -271,6 +281,22 @@ export default function Cart() {
                 >
                   <i className="fa-solid fa-xmark"></i>
                 </button>
+
+                <div className="ci-notes">
+                  <input
+                    type="text"
+                    placeholder="Add special instructions (e.g., no onions, extra spicy)"
+                    value={itemNotes[item._id] || ""}
+                    onChange={(e) => handleNoteChange(item._id, e.target.value)}
+                    className="item-note-input"
+                    maxLength="100"
+                  />
+                  {itemNotes[item._id] && (
+                    <span className="note-indicator">
+                      <i className="fa-solid fa-sticky-note"></i>
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

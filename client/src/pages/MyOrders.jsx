@@ -133,6 +133,11 @@ export default function MyOrders() {
                       <div className="oi-info">
                         <span className="oi-name">{item.name}</span>
                         <span className="oi-qty">x{item.qty}</span>
+                        {item.note && (
+                          <span className="oi-note">
+                            <i className="fa-solid fa-sticky-note"></i> {item.note}
+                          </span>
+                        )}
                       </div>
                       <span className="oi-price">${(item.price * item.qty).toFixed(2)}</span>
                     </div>

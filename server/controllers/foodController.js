@@ -263,6 +263,7 @@ module.exports.checkout = async (req, res) => {
     price: ci.price,
     imageUrl: ci.imageUrl,
     qty: ci.qty,
+    note: ci.note || "",  // include item-specific notes
   }));
 
   const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);

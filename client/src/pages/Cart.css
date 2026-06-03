@@ -169,6 +169,45 @@
   color: var(--error);
 }
 
+.ci-notes {
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+  padding: 0 20px;
+}
+
+.item-note-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.item-note-input:focus {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.item-note-input::placeholder {
+  color: var(--text-muted);
+}
+
+.note-indicator {
+  position: absolute;
+  right: 24px;
+  top: 10px;
+  color: var(--primary);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
 /* Summary */
 .cart-summary {
   width: 320px;
