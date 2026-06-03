@@ -259,15 +259,25 @@ export default function AdminOrders() {
                       </thead>
                       <tbody>
                         {order.items.map((item, i) => (
-                          <tr key={i}>
-                            <td style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              {item.imageUrl && <img src={item.imageUrl} alt="" className="item-thumb-sm" />}
-                              {item.name}
-                            </td>
-                            <td>{item.qty}</td>
-                            <td>${item.price?.toFixed(2) ?? "0.00"}</td>
-                            <td style={{ fontWeight: 600 }}>${((item.price ?? 0) * item.qty).toFixed(2)}</td>
-                          </tr>
+                          <React.Fragment key={i}>
+                            <tr>
+                              <td style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                {item.imageUrl && <img src={item.imageUrl} alt="" className="item-thumb-sm" />}
+                                {item.name}
+                              </td>
+                              <td>{item.qty}</td>
+                              <td>${item.price?.toFixed(2) ?? "0.00"}</td>
+                              <td style={{ fontWeight: 600 }}>${((item.price ?? 0) * item.qty).toFixed(2)}</td>
+                            </tr>
+                            {item.note && (
+                              <tr className="admin-item-note-row">
+                                <td colSpan="4" style={{ padding: "8px 20px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                                  <i className="fa-solid fa-sticky-note" style={{ color: "var(--primary)", marginRight: "6px" }}></i>
+                                  <strong>Note:</strong> {item.note}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         ))}
                       </tbody>
                     </table>

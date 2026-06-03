@@ -306,6 +306,12 @@
   background: rgba(241, 245, 249, 0.5);
 }
 
+.admin-item-note-row td {
+  background: rgba(79, 70, 229, 0.05) !important;
+  border-left: 3px solid var(--primary);
+  font-style: italic;
+}
+
 /* Buttons */
 .admin-btn {
   display: inline-flex;
