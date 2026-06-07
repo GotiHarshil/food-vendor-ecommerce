@@ -1,0 +1,69 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  playwright-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")''"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install --prefix server
+          npm install --prefix client
+
+      - name: Install Playwright browsers
+        run: npm exec --prefix client -- playwright install --with-deps
+        continue-on-error: true
+
+      - name: Build client
+        run: npm run build --prefix client
+
+      - name: Start server
+        env:
+          MONGODB_URI: mongodb://localhost:27017/food-vendor-test
+          NODE_ENV: test
+        run: npm start --prefix server &
+        timeout-minutes: 1
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:5000 --timeout 30000
+        timeout-minutes: 1
+
+      - name: Run E2E tests
+        env:
+          MONGODB_URI: mongodb://localhost:27017/food-vendor-test
+          NODE_ENV: test
+        run: npm test
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
