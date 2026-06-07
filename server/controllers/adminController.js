@@ -452,3 +452,31 @@ module.exports.translateOrderNote = async (req, res) => {
     res.status(500).json({ message: "Translation failed. Please try again." });
   }
 };
+
+// Translate individual item notes
+module.exports.translateItemNote = async (req, res) => {
+  try {
+    const { itemIndex, note } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!note) return res.status(400).json({ message: "No note to translate" });
+
+    let noteHindi;
+
+    // Try Gemini first, fall back to MyMemory if quota/error
+    try {
+      noteHindi = await translateWithGemini(note);
+      console.log("[Translate Item] Gemini success");
+    } catch (geminiErr) {
+      console.warn("[Translate Item] Gemini failed, using MyMemory fallback:", geminiErr.message.slice(0, 80));
+      noteHindi = await translateWithMyMemory(note);
+      console.log("[Translate Item] MyMemory success");
+    }
+
+    res.json({ success: true, noteHindi });
+  } catch (err) {
+    console.error("[Translate Item] All translation methods failed:", err.message);
+    res.status(500).json({ message: "Translation failed. Please try again." });
+  }
+};

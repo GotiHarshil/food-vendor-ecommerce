@@ -25,6 +25,7 @@ export default function AdminOrders() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
   const [translating, setTranslating] = useState(null);
+  const [itemTranslations, setItemTranslations] = useState({});
 
   const fetchOrders = useCallback(() => {
     fetch("/api/admin/orders?limit=100", { credentials: "include" })
@@ -159,6 +160,30 @@ export default function AdminOrders() {
     }
   };
 
+  const handleTranslateItemNote = async (orderId, itemIndex, itemNote) => {
+    const translationKey = `${orderId}-${itemIndex}`;
+    setTranslating(translationKey);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/translate-item`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemIndex, note: itemNote }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setItemTranslations((prev) => ({
+          ...prev,
+          [translationKey]: data.noteHindi
+        }));
+      }
+    } catch (err) {
+      console.error("Item translation failed:", err);
+    } finally {
+      setTranslating(null);
+    }
+  };
+
   const handleCancel = async (orderId) => {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/cancel`, {
@@ -261,9 +286,28 @@ export default function AdminOrders() {
                         {order.items.map((item, i) => (
                           <React.Fragment key={i}>
                             <tr>
-                              <td style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <td style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
                                 {item.imageUrl && <img src={item.imageUrl} alt="" className="item-thumb-sm" />}
-                                {item.name}
+                                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  {item.name}
+                                  {item.note && (
+                                    <span style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      background: "#fef3c7",
+                                      color: "#92400e",
+                                      padding: "2px 8px",
+                                      borderRadius: "12px",
+                                      fontSize: "0.7rem",
+                                      fontWeight: 600,
+                                      whiteSpace: "nowrap"
+                                    }} title={`Note: ${item.note}`}>
+                                      <i className="fa-solid fa-sticky-note"></i>
+                                      Special
+                                    </span>
+                                  )}
+                                </span>
                               </td>
                               <td>{item.qty}</td>
                               <td>${item.price?.toFixed(2) ?? "0.00"}</td>
@@ -271,9 +315,39 @@ export default function AdminOrders() {
                             </tr>
                             {item.note && (
                               <tr className="admin-item-note-row">
-                                <td colSpan="4" style={{ padding: "8px 20px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                                  <i className="fa-solid fa-sticky-note" style={{ color: "var(--primary)", marginRight: "6px" }}></i>
-                                  <strong>Note:</strong> {item.note}
+                                <td colSpan="4" style={{ padding: "8px 20px" }}>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                    <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                                      <i className="fa-solid fa-sticky-note" style={{ color: "var(--primary)", marginRight: "6px" }}></i>
+                                      <strong>Note:</strong> {item.note}
+                                    </div>
+                                    {itemTranslations[`${order._id}-${i}`] ? (
+                                      <div style={{
+                                        fontSize: "0.92rem", background: "#f0f4ff", padding: "10px 14px",
+                                        borderRadius: "8px", borderLeft: "3px solid #4f46e5",
+                                        color: "#1a1a2e", fontFamily: "sans-serif",
+                                      }}>
+                                        <strong style={{ color: "#4f46e5" }}>हिंदी:</strong> {itemTranslations[`${order._id}-${i}`]}
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleTranslateItemNote(order._id, i, item.note)}
+                                        disabled={translating === `${order._id}-${i}`}
+                                        style={{
+                                          padding: "6px 14px", fontSize: "0.82rem", fontWeight: 600,
+                                          background: translating === `${order._id}-${i}` ? "#a5b4fc" : "#4f46e5",
+                                          color: "white", border: "none", borderRadius: "6px",
+                                          cursor: translating === `${order._id}-${i}` ? "not-allowed" : "pointer",
+                                          display: "inline-flex", alignItems: "center", gap: "6px",
+                                          transition: "background 0.2s",
+                                          width: "fit-content"
+                                        }}
+                                      >
+                                        <i className="fa-solid fa-language"></i>
+                                        {translating === `${order._id}-${i}` ? "Translating..." : "Translate to Hindi"}
+                                      </button>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             )}

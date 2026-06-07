@@ -41,6 +41,7 @@ router.get("/orders", wrapAsync(adminController.getAllOrders));
 router.put("/orders/:id/status", wrapAsync(adminController.updateOrderStatus));
 router.post("/orders/:id/cancel", wrapAsync(adminController.cancelOrder));
 router.post("/orders/:id/translate", wrapAsync(adminController.translateOrderNote));
+router.post("/orders/:id/translate-item", wrapAsync(adminController.translateItemNote));
 
 // Users
 router.get("/users", wrapAsync(adminController.getAllUsers));

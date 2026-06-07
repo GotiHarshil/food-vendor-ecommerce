@@ -88,6 +88,7 @@ module.exports.getCartItems = async (req, res, next) => {
       price: item.price,
       imageUrl: item.imageUrl,
       qty: item.qty,
+      note: item.note || "",
     }));
     return res.json(transformed);
   }
@@ -255,7 +256,18 @@ module.exports.checkout = async (req, res) => {
     return res.status(400).json({ error: "Maximum 40 items per order. Please reduce quantities." });
   }
 
-  const { note } = req.body;
+  const { note, itemNotes } = req.body;
+
+  // Update cart items with notes from frontend if provided
+  if (itemNotes && typeof itemNotes === 'object') {
+    for (const itemId of Object.keys(itemNotes)) {
+      const cartItem = cartItems.find(ci => ci._id.toString() === itemId);
+      if (cartItem) {
+        cartItem.note = itemNotes[itemId] || "";
+        await cartItem.save();
+      }
+    }
+  }
 
   const orderItems = cartItems.map((ci) => ({
     foodId: ci.foodId,

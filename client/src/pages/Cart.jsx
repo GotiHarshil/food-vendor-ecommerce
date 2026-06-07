@@ -137,10 +137,14 @@ export default function Cart() {
     setError(null);
 
     try {
+      const checkoutData = {
+        note: orderNote,
+        itemNotes: itemNotes
+      };
       const response = await fetch("/api/food/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: orderNote }),
+        body: JSON.stringify(checkoutData),
         credentials: "include",
       });
       const data = await response.json();
