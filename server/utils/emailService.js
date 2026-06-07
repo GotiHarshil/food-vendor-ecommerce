@@ -221,6 +221,64 @@ const emailTemplates = {
     `,
     };
   },
+
+  passwordReset: (resetLink, user) => {
+    return {
+      subject: "Reset Your Password",
+      html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+            .header h1 { margin: 0; font-size: 28px; }
+            .content { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .reset-box { background: white; padding: 20px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #4f46e5; }
+            .button { display: inline-block; padding: 12px 30px; background: #4f46e5; color: white; text-decoration: none; border-radius: 6px; margin: 15px 0; }
+            .warning { background: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; color: #92400e; }
+            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Reset Your Password</h1>
+            </div>
+
+            <div class="content">
+              <p>Hi ${user.name || user.email},</p>
+              <p>We received a request to reset your password. Click the button below to set a new password:</p>
+
+              <div class="reset-box">
+                <p style="text-align: center;">
+                  <a href="${resetLink}" class="button">Reset Password</a>
+                </p>
+                <p style="text-align: center; font-size: 12px; color: #666;">
+                  Or copy this link:<br>
+                  <code style="word-break: break-all; background: #f0f0f0; padding: 5px;">${resetLink}</code>
+                </p>
+              </div>
+
+              <div class="warning">
+                <strong>⚠️ This link expires in 1 hour</strong>
+                <p style="margin: 5px 0 0 0;">If you didn't request this, please ignore this email and your password will remain unchanged.</p>
+              </div>
+
+              <p>If you have any questions, please contact us at (212) 555-0123.</p>
+            </div>
+
+            <div class="footer">
+              <p>&copy; 2026 MANU Food Vendor. All rights reserved.</p>
+              <p>This is an automated email. Please do not reply directly.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+    };
+  },
 };
 
 // Status information for emails

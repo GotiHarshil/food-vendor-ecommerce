@@ -12,6 +12,8 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderDetails from "./pages/OrderDetails";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import MyOrders from "./pages/MyOrders";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
@@ -54,6 +56,8 @@ function App() {
                   <Route path="/orders/:orderId" element={<OrderDetails />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
                   <Route path="/my-orders" element={<MyOrders />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/about" element={<About />} />

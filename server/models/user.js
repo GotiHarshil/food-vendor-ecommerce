@@ -26,6 +26,18 @@ const userSchema = new Schema({
       ref: "Food",
     },
   ],
+  resetToken: {
+    type: String,
+    default: null,
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: null,
+  },
+  passwordChangedAt: {
+    type: Date,
+    default: null,
+  },
 }, { timestamps: true });
 
 // Configure passport-local-mongoose to use the `email` field as the username

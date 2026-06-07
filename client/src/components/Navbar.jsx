@@ -20,7 +20,24 @@ export default function Navbar() {
     checkUserStatus();
     refreshCart();
     setMenuOpen(false);
-  }, [location, refreshCart]);
+
+    // Periodic auth check every 30 seconds to detect logout from other devices
+    const authCheckInterval = setInterval(async () => {
+      try {
+        const response = await fetch("/api/user/status", {
+          credentials: "include",
+        });
+        if (!response.ok && user) {
+          // User was logged in but is now logged out (password reset, logout from another device, etc)
+          window.location.reload();
+        }
+      } catch (err) {
+        console.error("Auth check error:", err);
+      }
+    }, 30000);
+
+    return () => clearInterval(authCheckInterval);
+  }, [location, refreshCart, user]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);

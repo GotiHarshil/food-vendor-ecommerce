@@ -91,4 +91,14 @@ router
   //Toggle favorite
   .post(isLoggedIn, wrapAsync(userController.toggleFavorite));
 
+router
+  .route("/api/user/forgot-password")
+  //Forgot password - send reset email
+  .post(authLimiter, wrapAsync(userController.forgotPassword));
+
+router
+  .route("/api/user/reset-password")
+  //Reset password - verify token and set new password
+  .post(authLimiter, wrapAsync(userController.resetPassword));
+
 module.exports = router;

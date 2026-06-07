@@ -1,5 +1,7 @@
 const User = require("../models/user");
 const passport = require("passport");
+const crypto = require("crypto");
+const { sendEmail, emailTemplates } = require("../utils/emailService");
 
 module.exports.renderSignupForm = (req, res) => {
   res.render("users/signup");
@@ -188,6 +190,8 @@ module.exports.changePassword = async (req, res) => {
 
   try {
     await req.user.changePassword(currentPassword, newPassword);
+    req.user.passwordChangedAt = new Date();
+    await req.user.save();
     res.json({ success: true, message: "Password changed successfully" });
   } catch (err) {
     if (err.message === "Password incorrect") {
@@ -216,4 +220,83 @@ module.exports.toggleFavorite = async (req, res) => {
 
   await req.user.save();
   res.json({ success: true, favorited: idx === -1 });
+};
+
+// Forgot password - generate reset token
+module.exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Please provide your email address" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "No account found with this email address" });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    user.resetToken = resetTokenHash;
+    user.resetTokenExpiry = resetTokenExpiry;
+    await user.save();
+
+    const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
+    const resetLink = `${clientUrl}/reset-password/${resetToken}`;
+
+    const emailTemplate = emailTemplates.passwordReset(resetLink, user);
+    const emailResult = await sendEmail(user.email, emailTemplate.subject, emailTemplate.html);
+
+    if (!emailResult.success) {
+      return res.status(500).json({ error: "Failed to send reset email. Please try again." });
+    }
+
+    res.json({ success: true, message: "Password reset link sent to your email" });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ error: "An error occurred. Please try again." });
+  }
+};
+
+// Reset password - verify token and set new password
+module.exports.resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    const resetTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await User.findOne({
+      resetToken: resetTokenHash,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid or expired reset link" });
+    }
+
+    await user.setPassword(newPassword);
+    user.resetToken = null;
+    user.resetTokenExpiry = null;
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Password reset successfully. Please log in with your new password.",
+      redirect: "/login"
+    });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ error: "An error occurred. Please try again." });
+  }
 };
