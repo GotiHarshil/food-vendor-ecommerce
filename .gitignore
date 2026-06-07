@@ -44,8 +44,7 @@ CLAUDE.md
 .claude/
 
 # Graphify (code analysis tool)
-.graphify_*.json
-.graphify_*.py
+.graphify_*
 .graphify_python
 graphify-out/
 server/graphify-out/
