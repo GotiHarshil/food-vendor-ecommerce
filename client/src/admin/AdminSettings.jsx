@@ -31,7 +31,7 @@ export default function AdminSettings() {
         setMessage("Settings saved successfully!");
         setTimeout(() => setMessage(""), 3000);
       }
-    } catch (err) {
+    } catch {
       setMessage("Error saving settings");
     } finally {
       setSaving(false);

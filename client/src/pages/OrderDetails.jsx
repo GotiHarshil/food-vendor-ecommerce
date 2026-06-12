@@ -10,6 +10,12 @@ const STATUS_TIMELINE = {
   cancelled: { label: "Cancelled", icon: "fa-circle-xmark", color: "#ef4444" },
 };
 
+const STATUS_ORDER = ["pending", "preparing", "ready", "picked_up"];
+
+function getStatusPosition(status) {
+  return STATUS_ORDER.indexOf(status);
+}
+
 export default function OrderDetails() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -73,11 +79,6 @@ export default function OrderDetails() {
       </div>
     );
   }
-
-  const getStatusPosition = (status) => {
-    const statuses = ["pending", "preparing", "ready", "picked_up"];
-    return statuses.indexOf(status);
-  };
 
   const currentStatusPos = getStatusPosition(order.status);
   const subtotal = order.items?.reduce(
@@ -200,8 +201,8 @@ export default function OrderDetails() {
       <div className="details-card">
         <h2 className="card-title">Order Summary</h2>
         <div className="items-list">
-          {order.items?.map((item, idx) => (
-            <div key={idx} className="item-row">
+          {order.items?.map((item) => (
+            <div key={`${item.foodId}-${item.name}`} className="item-row">
               <div className="item-info">
                 <img src={item.imageUrl} alt={item.name} className="item-img" />
                 <div>

@@ -125,8 +125,8 @@ export default function MyOrders() {
                 )}
 
                 <div className="order-items">
-                  {order.items.map((item, i) => (
-                    <div key={i} className="order-item">
+                  {order.items.map((item) => (
+                    <div key={`${item.foodId}-${item.name}`} className="order-item">
                       <div className="oi-thumb">
                         <img src={item.imageUrl} alt={item.name} />
                       </div>

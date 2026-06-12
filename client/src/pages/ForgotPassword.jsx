@@ -30,7 +30,7 @@ export default function ForgotPassword() {
       } else {
         setError(data.error || "Failed to process request");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

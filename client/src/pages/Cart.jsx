@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/cart-context";
 import "./Cart.css";
 
 export default function Cart() {
@@ -14,7 +14,6 @@ export default function Cart() {
   const [removingId, setRemovingId] = useState(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [orderNote, setOrderNote] = useState("");
-  const [orderSuccess, setOrderSuccess] = useState(null);
   const [user, setUser] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [showError, setShowError] = useState(false);
@@ -22,6 +21,8 @@ export default function Cart() {
   useEffect(() => {
     fetchCart();
     fetchUser();
+    // Mount-only: fetchCart/fetchUser are stable and intended to run once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUser = async () => {

@@ -25,7 +25,10 @@ export default function AdminItems() {
       .then((res) => res.json())
       .then((data) => {
         setItems(data);
-        setSpecialIds(data.filter((i) => i.isTodaysSpecial).map((i) => i._id));
+        setSpecialIds(data.reduce((acc, i) => {
+          if (i.isTodaysSpecial) acc.push(i._id);
+          return acc;
+        }, []));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -70,7 +73,7 @@ export default function AdminItems() {
       });
       if (res.ok) { setShowModal(false); fetchItems(); }
       else { const d = await res.json(); alert(d.error); }
-    } catch (err) { alert("Error saving item"); }
+    } catch { alert("Error saving item"); }
     finally { setSaving(false); }
   };
 
@@ -189,8 +192,8 @@ export default function AdminItems() {
                   </td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{item.name}</div>
-                    {item.isTemporarilyHidden && <span style={{ fontSize: "0.72rem", color: "var(--warning)" }}>Hidden</span>}
-                    {item.isDeleted && <span style={{ fontSize: "0.72rem", color: "var(--error)" }}>Deleted</span>}
+                    {item.isTemporarilyHidden && <span style={{ fontSize: "0.75rem", color: "var(--warning)" }}>Hidden</span>}
+                    {item.isDeleted && <span style={{ fontSize: "0.75rem", color: "var(--error)" }}>Deleted</span>}
                   </td>
                   <td style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>{item.category}</td>
                   <td style={{ fontWeight: 600 }}>${item.price}</td>

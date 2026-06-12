@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import FoodCard from "../components/FoodCard";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/cart-context";
 import "./Menu.css";
 
 const CATEGORIES = [
@@ -40,11 +40,12 @@ export default function Menu() {
   const sectionRefs = useRef({});
   const { refreshCart } = useCart();
   const [favoritedIds, setFavoritedIds] = useState(new Set());
-  const [orders, setOrders] = useState([]);
   const [recommendedCategory, setRecommendedCategory] = useState(null);
 
   useEffect(() => {
     fetchData();
+    // Mount-only: fetchData is intended to run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
@@ -77,7 +78,6 @@ export default function Menu() {
       setFoods(foodsData);
       setCartItems(cartData);
       setFavoritedIds(favoriteIds);
-      setOrders(ordersData);
 
       // Calculate recommendations
       if (ordersData.length > 0) {
@@ -129,7 +129,10 @@ export default function Menu() {
     return acc;
   }, {});
 
-  const categoryOrder = CATEGORIES.filter((c) => c.key !== "all").map((c) => c.key);
+  const categoryOrder = CATEGORIES.reduce((acc, c) => {
+    if (c.key !== "all") acc.push(c.key);
+    return acc;
+  }, []);
 
   const handleCategoryClick = (key) => {
     setActiveCategory(key);

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import "./Profile.css";
 
 export default function Profile() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
   const [loading, setLoading] = useState(true);
@@ -282,6 +281,7 @@ export default function Profile() {
                   type="email"
                   value={user?.email || ""}
                   placeholder="Your email"
+                  readOnly
                   disabled
                   className="disabled-input"
                 />

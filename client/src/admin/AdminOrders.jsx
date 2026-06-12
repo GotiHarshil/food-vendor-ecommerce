@@ -299,7 +299,7 @@ export default function AdminOrders() {
                                       color: "#92400e",
                                       padding: "2px 8px",
                                       borderRadius: "12px",
-                                      fontSize: "0.7rem",
+                                      fontSize: "0.75rem",
                                       fontWeight: 600,
                                       whiteSpace: "nowrap"
                                     }} title={`Note: ${item.note}`}>

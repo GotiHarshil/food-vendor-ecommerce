@@ -4,7 +4,7 @@ import "./SearchDropdown.css";
 
 let foodsCache = null;
 
-export default function SearchDropdown({ query, onSelect, isFocused }) {
+export default function SearchDropdown({ query, isFocused }) {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
   const [foods, setFoods] = useState([]);
@@ -93,20 +93,24 @@ export default function SearchDropdown({ query, onSelect, isFocused }) {
             </div>
             <div className="dropdown-items">
               {history.map((term) => (
-                <button
-                  key={term}
-                  className="dropdown-item history-item"
-                  onClick={() => handleSelectHistory(term)}
-                >
-                  <i className="fa-solid fa-clock"></i>
-                  <span>{term}</span>
+                <div key={term} className="dropdown-item history-item">
                   <button
+                    type="button"
+                    className="history-item-main"
+                    onClick={() => handleSelectHistory(term)}
+                  >
+                    <i className="fa-solid fa-clock"></i>
+                    <span>{term}</span>
+                  </button>
+                  <button
+                    type="button"
                     className="remove-btn"
                     onClick={(e) => handleRemoveHistoryItem(e, term)}
+                    aria-label={`Remove ${term} from search history`}
                   >
                     <i className="fa-solid fa-xmark"></i>
                   </button>
-                </button>
+                </div>
               ))}
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import "./OrderConfirmation.css";
 
 const STATUS_TIMELINE = {
@@ -9,12 +9,16 @@ const STATUS_TIMELINE = {
   picked_up: { label: "Completed", icon: "fa-circle-check", color: "#6b7280" },
 };
 
+const STATUS_ORDER = ["pending", "preparing", "ready", "picked_up"];
+
+function getStatusPosition(status) {
+  return STATUS_ORDER.indexOf(status);
+}
+
 export default function OrderConfirmation() {
   const location = useLocation();
-  const navigate = useNavigate();
   const order = location.state?.order;
   const [liveOrder, setLiveOrder] = useState(order);
-  const [loading, setLoading] = useState(false);
   const [syncError, setSyncError] = useState(null);
 
   // Poll for order status updates
@@ -80,13 +84,7 @@ export default function OrderConfirmation() {
     };
   }, [order?._id]);
 
-  const getStatusPosition = (status) => {
-    const statuses = ["pending", "preparing", "ready", "picked_up"];
-    return statuses.indexOf(status);
-  };
-
   const currentStatusPos = getStatusPosition(liveOrder.status);
-  const totalStatuses = 4;
 
   const subtotal = liveOrder.items?.reduce(
     (sum, item) => sum + (item.price || 0) * (item.qty || 0),

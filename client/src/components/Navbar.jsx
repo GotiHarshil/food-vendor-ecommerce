@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import SearchDropdown from "./SearchDropdown";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/cart-context";
 import "./Navbar.css";
 
 export default function Navbar() {
@@ -78,7 +78,7 @@ export default function Navbar() {
       } else {
         setUser(null);
       }
-    } catch (err) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);

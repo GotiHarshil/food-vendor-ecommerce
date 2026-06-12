@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { useCart } from "../context/cart-context";
 import "./FloatingCart.css";
 
 export default function FloatingCart() {

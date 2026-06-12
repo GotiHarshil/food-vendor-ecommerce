@@ -28,7 +28,7 @@ export default function Login() {
         const data = await response.json();
         setError(data.error || "Invalid email or password");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

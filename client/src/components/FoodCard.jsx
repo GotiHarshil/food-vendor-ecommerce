@@ -171,7 +171,7 @@ export default function FoodCard({ food, cartItems = [], onUpdate, isFavorited =
                   disabled={isLoading}
                 >
                   {currentQty === 1 ? (
-                    <i className="fa-solid fa-trash-can" style={{ fontSize: "0.7rem" }}></i>
+                    <i className="fa-solid fa-trash-can" style={{ fontSize: "0.75rem" }}></i>
                   ) : (
                     <i className="fa-solid fa-minus"></i>
                   )}

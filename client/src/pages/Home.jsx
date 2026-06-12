@@ -32,11 +32,49 @@ function CountUp({ end, duration = 2000, suffix = "" }) {
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
+// Reveal-on-scroll: adds `.is-visible` to every `.reveal` inside the page.
+// `trigger` re-runs the setup so reveal elements rendered later (e.g. async
+// data like today's specials) also get observed.
+function useScrollReveal(containerRef, trigger) {
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const els = root.querySelectorAll(".reveal");
+
+    // Fallback: if IntersectionObserver is unavailable, just show everything.
+    if (typeof IntersectionObserver === "undefined") {
+      els.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      // threshold 0 so anything already in view (above the fold) reveals on load;
+      // small negative bottom margin gives a gentle reveal as lower sections enter.
+      { threshold: 0, rootMargin: "0px 0px -8% 0px" }
+    );
+
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [containerRef, trigger]);
+}
+
 export default function Home() {
   const [todaysSpecials, setTodaysSpecials] = useState([]);
   const [stats, setStats] = useState({ totalItems: 0, totalOrders: 0, totalUsers: 0 });
   const [storeInfo, setStoreInfo] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+
+  const pageRef = useRef(null);
+  useScrollReveal(pageRef, todaysSpecials.length);
 
   useEffect(() => {
     // Fetch today's specials
@@ -76,7 +114,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="home-page">
+    <div className="home-page" ref={pageRef}>
       {/* Store closed banner */}
       {storeInfo && !storeInfo.isOpen && (
         <div className="store-closed-banner">
@@ -96,22 +134,23 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-bg">
-          <div className="hero-gradient"></div>
+          <div className="hero-mesh"></div>
+          <div className="hero-glow"></div>
           <div className="hero-pattern"></div>
         </div>
 
         <div className="hero-content animate-fade-in-up">
           <span className="hero-badge">
-            <i className="fa-solid fa-fire"></i> Fresh & Authentic Street Food
+            <i className="fa-solid fa-fire"></i> Fresh &amp; Authentic Street Food
           </span>
           <h1 className="hero-title">
-            Delicious Food,
+            Crave It.
             <br />
-            <span className="gradient-text">Ready for Pickup</span>
+            <span className="gradient-text">Order It.</span> Devour It.
           </h1>
           <p className="hero-subtitle">
-            Order online and pick up fresh from our kitchen.
-            Authentic recipes, quality ingredients, and a taste you'll love.
+            Bold flavors, fresh from our kitchen. Order online, skip the wait, and
+            pick up a taste you won't stop thinking about.
           </p>
           <div className="hero-actions">
             <Link to="/menu" className="btn-hero-primary">
@@ -134,6 +173,7 @@ export default function Home() {
 
         <div className="hero-visual animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
           <div className="hero-card">
+            <div className="hero-card-glow"></div>
             <div className="hero-card-img">
               <img src="https://res.cloudinary.com/dr0qdawz6/image/upload/v1779002157/food-vendor/manu-logo.png" alt="MANU Logo" />
             </div>
@@ -150,13 +190,11 @@ export default function Home() {
       </section>
 
       {/* Stats — real data */}
-      <section className="stats-section" style={{ minHeight: "200px" }}>
+      <section className="stats-section reveal">
         {statsLoading ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "200px" }}>
-            <div style={{ textAlign: "center", color: "var(--text-muted)" }}>
-              <div style={{ fontSize: "1.2rem", marginBottom: "10px" }}>Loading stats...</div>
-              <i className="fa-solid fa-spinner" style={{ animation: "spin 1s linear infinite", fontSize: "2rem" }}></i>
-            </div>
+          <div className="stats-loading">
+            <i className="fa-solid fa-spinner stats-spinner"></i>
+            <span>Loading stats...</span>
           </div>
         ) : (
           <div className="stats-grid">
@@ -183,7 +221,7 @@ export default function Home() {
             </div>
             <div className="stat-item">
               <div className="stat-icon"><i className="fa-solid fa-location-dot"></i></div>
-              <div className="stat-number" style={{ fontSize: "1rem", fontWeight: 700 }}>NYC</div>
+              <div className="stat-number stat-number-sm">NYC</div>
               <div className="stat-label">42W 46th St</div>
             </div>
           </div>
@@ -193,7 +231,7 @@ export default function Home() {
       {/* Today's Special */}
       {todaysSpecials.length > 0 && (
         <section className="special-section">
-          <div className="section-header">
+          <div className="section-header reveal">
             <span className="section-tag"><i className="fa-solid fa-fire"></i> Today's Special</span>
             <h2 className="section-title">Chef's Picks for Today</h2>
             <p className="section-subtitle">
@@ -201,9 +239,13 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="special-grid stagger">
-            {todaysSpecials.map((item) => (
-              <div key={item._id} className="special-card animate-fade-in-up">
+          <div className="special-grid">
+            {todaysSpecials.map((item, i) => (
+              <div
+                key={item._id}
+                className="special-card reveal"
+                style={{ transitionDelay: `${i * 80}ms` }}
+              >
                 <div className="special-badge">
                   <i className="fa-solid fa-fire"></i> Special
                 </div>
@@ -228,7 +270,7 @@ export default function Home() {
 
       {/* Features */}
       <section className="features-section">
-        <div className="section-header">
+        <div className="section-header reveal">
           <span className="section-tag">Why MANU?</span>
           <h2 className="section-title">What Makes Us Special</h2>
           <p className="section-subtitle">
@@ -236,8 +278,8 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="features-grid stagger">
-          <div className="feature-card animate-fade-in-up">
+        <div className="features-grid">
+          <div className="feature-card reveal" style={{ transitionDelay: "0ms" }}>
             <div className="feature-icon" style={{ background: "linear-gradient(135deg, #fff7ed, #ffedd5)" }}>
               <i className="fa-solid fa-leaf" style={{ color: "#ea580c" }}></i>
             </div>
@@ -245,23 +287,23 @@ export default function Home() {
             <p>Locally sourced, hand-picked ingredients ensuring the highest quality in every dish.</p>
           </div>
 
-          <div className="feature-card animate-fade-in-up">
+          <div className="feature-card reveal" style={{ transitionDelay: "80ms" }}>
             <div className="feature-icon" style={{ background: "linear-gradient(135deg, #f0fdf4, #dcfce7)" }}>
               <i className="fa-solid fa-bell" style={{ color: "#16a34a" }}></i>
             </div>
-            <h3>Order & Pickup</h3>
+            <h3>Order &amp; Pickup</h3>
             <p>Order online and we'll notify you when your food is ready for pickup. No waiting!</p>
           </div>
 
-          <div className="feature-card animate-fade-in-up">
+          <div className="feature-card reveal" style={{ transitionDelay: "160ms" }}>
             <div className="feature-icon" style={{ background: "linear-gradient(135deg, #eff6ff, #dbeafe)" }}>
               <i className="fa-solid fa-shield-halved" style={{ color: "#2563eb" }}></i>
             </div>
-            <h3>Safe & Hygienic</h3>
+            <h3>Safe &amp; Hygienic</h3>
             <p>Prepared in a certified kitchen following strict hygiene and safety standards.</p>
           </div>
 
-          <div className="feature-card animate-fade-in-up">
+          <div className="feature-card reveal" style={{ transitionDelay: "240ms" }}>
             <div className="feature-icon" style={{ background: "linear-gradient(135deg, #faf5ff, #f3e8ff)" }}>
               <i className="fa-solid fa-heart" style={{ color: "#9333ea" }}></i>
             </div>
@@ -273,34 +315,34 @@ export default function Home() {
 
       {/* How it Works */}
       <section className="how-it-works-section">
-        <div className="section-header">
+        <div className="section-header reveal">
           <span className="section-tag">How it Works</span>
           <h2 className="section-title">Three Simple Steps</h2>
         </div>
 
-        <div className="steps-grid stagger">
-          <div className="step-card animate-fade-in-up">
+        <div className="steps-grid">
+          <div className="step-card reveal" style={{ transitionDelay: "0ms" }}>
             <div className="step-number">1</div>
-            <h3>Browse & Order</h3>
+            <h3>Browse &amp; Order</h3>
             <p>Pick your favorites from our menu and add them to your cart.</p>
           </div>
           <div className="step-connector"><i className="fa-solid fa-arrow-right"></i></div>
-          <div className="step-card animate-fade-in-up">
+          <div className="step-card reveal" style={{ transitionDelay: "120ms" }}>
             <div className="step-number">2</div>
             <h3>Get Notified</h3>
             <p>We'll let you know as soon as your order is ready for pickup.</p>
           </div>
           <div className="step-connector"><i className="fa-solid fa-arrow-right"></i></div>
-          <div className="step-card animate-fade-in-up">
+          <div className="step-card reveal" style={{ transitionDelay: "240ms" }}>
             <div className="step-number">3</div>
-            <h3>Pick Up & Enjoy</h3>
+            <h3>Pick Up &amp; Enjoy</h3>
             <p>Come to our store, grab your food, and enjoy every bite!</p>
           </div>
         </div>
       </section>
 
       {/* CTA Banner */}
-      <section className="cta-section">
+      <section className="cta-section reveal">
         <div className="cta-content">
           <h2>Ready to Order?</h2>
           <p>

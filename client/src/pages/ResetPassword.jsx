@@ -46,7 +46,7 @@ export default function ResetPassword() {
       } else {
         setError(data.error || "Failed to reset password");
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
