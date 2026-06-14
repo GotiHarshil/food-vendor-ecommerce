@@ -298,14 +298,15 @@ module.exports.streamOrders = (req, res) => {
 };
 
 module.exports.getAllOrders = async (req, res) => {
-  const { status, page = 1, limit = 20 } = req.query;
+  const { status, page = 1 } = req.query;
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
   const filter = {};
   if (status && status !== "all") filter.status = status;
 
   const orders = await Order.find(filter)
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
-    .limit(Number(limit))
+    .limit(limit)
     .lean();
 
   const total = await Order.countDocuments(filter);
@@ -387,14 +388,15 @@ module.exports.updateUserRole = async (req, res) => {
 
 // ─── AUDIT LOGS ──────────────────────────────────────────────
 module.exports.getAuditLogs = async (req, res) => {
-  const { page = 1, limit = 50, action } = req.query;
+  const { page = 1, action } = req.query;
+  const limit = Math.min(Number(req.query.limit) || 50, 100);
   const filter = {};
   if (action) filter.action = action;
 
   const logs = await AuditLog.find(filter)
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
-    .limit(Number(limit))
+    .limit(limit)
     .lean();
 
   const total = await AuditLog.countDocuments(filter);
@@ -406,7 +408,9 @@ module.exports.getAuditLogs = async (req, res) => {
 async function translateWithGemini(text) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
-  const prompt = `Translate the following customer food order special request from English to Hindi. Return only the Hindi translation, no explanations or extra text.\n\n"${text}"`;
+  // Truncate and strip quotes to reduce prompt injection surface
+  const safeText = text.slice(0, 500).replace(/["""''']/g, " ");
+  const prompt = `You are a translator. Translate ONLY the customer food order note below from English to Hindi. Output ONLY the Hindi translation, nothing else.\n---BEGIN NOTE---\n${safeText}\n---END NOTE---`;
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
 }
@@ -456,7 +460,8 @@ module.exports.translateOrderNote = async (req, res) => {
 // Translate individual item notes
 module.exports.translateItemNote = async (req, res) => {
   try {
-    const { itemIndex, note } = req.body;
+    const { itemIndex, note: rawNote } = req.body;
+    const note = (rawNote || "").slice(0, 500);
     const order = await Order.findById(req.params.id);
 
     if (!order) return res.status(404).json({ message: "Order not found" });

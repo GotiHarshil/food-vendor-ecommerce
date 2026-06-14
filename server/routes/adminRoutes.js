@@ -6,17 +6,17 @@ const { isAdmin } = require("../middleware");
 const wrapAsync = require("../utils/wrapAsync");
 const upload = require("../utils/multer");
 
-// Health check (no auth required - for debugging)
-router.get("/health", (req, res) => {
-  res.json({
-    authenticated: req.isAuthenticated(),
-    role: req.user?.role,
-    email: req.user?.email,
-  });
-});
-
 // All admin routes require admin authentication
 router.use(isAdmin);
+
+// Health check — admin-only, useful for debugging auth issues
+router.get("/health", (req, res) => {
+  res.json({
+    authenticated: true,
+    role: req.user.role,
+    email: req.user.email,
+  });
+});
 
 // Dashboard
 router.get("/dashboard", wrapAsync(adminController.getDashboard));

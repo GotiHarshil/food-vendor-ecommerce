@@ -233,7 +233,8 @@ module.exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ error: "No account found with this email address" });
+      // Return the same success message regardless so attackers can't enumerate registered emails
+      return res.json({ success: true, message: "Password reset link sent to your email" });
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");

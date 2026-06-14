@@ -1,5 +1,15 @@
 const nodemailer = require("nodemailer");
 
+// Prevent HTML injection in email bodies
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Create transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -42,7 +52,7 @@ const emailTemplates = {
             </div>
 
             <div class="content">
-              <p>Hi ${user.name || user.email},</p>
+              <p>Hi ${escapeHtml(user.name || user.email)},</p>
               <p>Your order has been received and is being prepared. Here's a summary:</p>
 
               <div class="order-details">
@@ -54,7 +64,7 @@ const emailTemplates = {
                   .map(
                     (item) =>
                       `<div class="item">
-                  <span>${item.name} (x${item.qty})</span>
+                  <span>${escapeHtml(item.name)} (x${item.qty})</span>
                   <span>$${(item.price * item.qty).toFixed(2)}</span>
                 </div>`
                   )
@@ -69,7 +79,7 @@ const emailTemplates = {
               ${
                 order.note
                   ? `<div style="background: #fef3c7; padding: 15px; border-radius: 6px; margin: 15px 0; color: #92400e;">
-                <strong>Special Instructions:</strong> ${order.note}
+                <strong>Special Instructions:</strong> ${escapeHtml(order.note)}
               </div>`
                   : ""
               }
@@ -129,8 +139,8 @@ const emailTemplates = {
             </div>
 
             <div class="content">
-              <p>Hi ${user.name || user.email},</p>
-              <p>${statusInfo.message}</p>
+              <p>Hi ${escapeHtml(user.name || user.email)},</p>
+              <p>${escapeHtml(statusInfo.message)}</p>
 
               <div class="status-box">
                 <h2>${statusInfo.icon} ${statusInfo.label}</h2>
@@ -197,13 +207,13 @@ const emailTemplates = {
             </div>
 
             <div class="content">
-              <p>Hi ${user.name || user.email},</p>
+              <p>Hi ${escapeHtml(user.name || user.email)},</p>
               <p>Unfortunately, your order has been cancelled.</p>
 
               ${
                 adminNote
                   ? `<div class="note">
-                <strong>Reason:</strong> ${adminNote}
+                <strong>Reason:</strong> ${escapeHtml(adminNote)}
               </div>`
                   : "<p>For more information, please contact us.</p>"
               }
@@ -248,7 +258,7 @@ const emailTemplates = {
             </div>
 
             <div class="content">
-              <p>Hi ${user.name || user.email},</p>
+              <p>Hi ${escapeHtml(user.name || user.email)},</p>
               <p>We received a request to reset your password. Click the button below to set a new password:</p>
 
               <div class="reset-box">

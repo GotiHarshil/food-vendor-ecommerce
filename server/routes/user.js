@@ -4,7 +4,7 @@ const router = express.Router({ mergeParams: true });
 const wrapAsync = require("../utils/wrapAsync");
 const passport = require("passport");
 const { saveRedirectUrl, isLoggedIn } = require("../middleware.js");
-const { authLimiter, adminLoginBypass } = require("../middleware/rateLimiter");
+const { authLimiter } = require("../middleware/rateLimiter");
 
 const userController = require("../controllers/users.js");
 
@@ -33,7 +33,7 @@ router
   .get(userController.renderLoginForm)
   //Login user
   .post(
-    adminLoginBypass,
+    authLimiter,
     saveRedirectUrl,
     passport.authenticate("local", {
       failureRedirect: "/login",
@@ -45,7 +45,7 @@ router
 router
   .route("/api/user/login")
   //API JSON endpoint for login
-  .post(adminLoginBypass, wrapAsync(userController.loginAPI));
+  .post(authLimiter, wrapAsync(userController.loginAPI));
 
 router
   .route("/cart")

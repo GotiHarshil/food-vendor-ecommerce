@@ -4,6 +4,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const express = require("express");
+const helmet = require("helmet");
 const cors = require("cors");
 const path = require("path");
 const flash = require("connect-flash");
@@ -29,7 +30,10 @@ app.set("trust proxy", 1);
 
 const connectDB = require("./utils/db");
 
-// CORS must come first so preflight OPTIONS requests are handled before session/passport
+// Helmet sets secure response headers (CSP, HSTS, X-Frame-Options, etc.)
+app.use(helmet());
+
+// CORS must come before session/passport so preflight OPTIONS is handled first
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = process.env.CLIENT_URL || "http://localhost:5173";
@@ -73,6 +77,7 @@ const sessionOptions = {
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   },
 };
 

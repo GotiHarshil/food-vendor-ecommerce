@@ -13,6 +13,38 @@ const CATEGORIES = [
   { key: "Beverages", label: "Beverages", icon: "fa-solid fa-mug-hot" },
 ];
 
+// Reveal-on-scroll: adds `.is-visible` to every `.reveal` inside the container.
+// `trigger` re-runs the setup so reveal elements rendered later (e.g. async
+// menu data) also get observed.
+function useScrollReveal(containerRef, trigger) {
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+
+    const els = root.querySelectorAll(".reveal");
+
+    if (typeof IntersectionObserver === "undefined") {
+      els.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0, rootMargin: "0px 0px -8% 0px" }
+    );
+
+    els.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [containerRef, trigger]);
+}
+
 function SkeletonCard() {
   return (
     <div className="skeleton-card">
@@ -38,6 +70,7 @@ export default function Menu() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("search") || "";
   const sectionRefs = useRef({});
+  const pageRef = useRef(null);
   const { refreshCart } = useCart();
   const [favoritedIds, setFavoritedIds] = useState(new Set());
   const [recommendedCategory, setRecommendedCategory] = useState(null);
@@ -151,6 +184,10 @@ export default function Menu() {
 
   const totalItems = displayFoods.length;
 
+  // Re-run reveal observer when loading flips or the rendered set changes,
+  // so sections mounted after data arrives still animate in.
+  useScrollReveal(pageRef, `${loading}-${activeCategory}-${displayFoods.length}`);
+
   // Get recommended items
   const recommendedItems = recommendedCategory
     ? foods.filter(
@@ -161,11 +198,25 @@ export default function Menu() {
     : [];
 
   return (
-    <div className="menu-page">
+    <div className="menu-page" ref={pageRef}>
       {/* Header */}
       <div className="menu-header">
-        <div className="menu-header-content">
-          <h1 className="menu-title">Our Menu</h1>
+        <div className="menu-header-bg" aria-hidden="true">
+          <div className="menu-header-glow"></div>
+          <div className="menu-header-glow alt"></div>
+          <div className="menu-header-pattern"></div>
+        </div>
+        <div className="menu-header-content reveal">
+          <span className="menu-tag">
+            <i className="fa-solid fa-utensils"></i> Crafted Fresh Daily
+          </span>
+          <h1 className="menu-title">
+            {searchQuery ? (
+              <>Search <span className="accent">Results</span></>
+            ) : (
+              <>Our <span className="accent">Menu</span></>
+            )}
+          </h1>
           <p className="menu-subtitle">
             {searchQuery
               ? `Showing results for "${searchQuery}"`
@@ -221,7 +272,7 @@ export default function Menu() {
           /* Single category view */
           <>
             {recommendedItems.length > 0 && (
-              <div className="recommended-section">
+              <div className="recommended-section reveal">
                 <div className="recommended-header">
                   <i className="fa-solid fa-heart"></i>
                   <span>Based on your orders</span>
@@ -256,13 +307,13 @@ export default function Menu() {
           </>
         ) : (
           /* All categories grouped */
-          <div className="menu-sections stagger">
+          <div className="menu-sections">
             {categoryOrder.map(
               (category) =>
                 groupedFoods[category] && (
                   <section
                     key={category}
-                    className="category-section animate-fade-in-up"
+                    className="category-section reveal"
                     ref={(el) => (sectionRefs.current[category] = el)}
                   >
                     <div className="category-header">

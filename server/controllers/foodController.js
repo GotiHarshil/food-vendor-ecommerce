@@ -256,14 +256,16 @@ module.exports.checkout = async (req, res) => {
     return res.status(400).json({ error: "Maximum 40 items per order. Please reduce quantities." });
   }
 
-  const { note, itemNotes } = req.body;
+  const NOTE_MAX = 500;
+  const note = (req.body.note || "").slice(0, NOTE_MAX);
+  const itemNotes = req.body.itemNotes;
 
   // Update cart items with notes from frontend if provided
-  if (itemNotes && typeof itemNotes === 'object') {
+  if (itemNotes && typeof itemNotes === "object" && !Array.isArray(itemNotes)) {
     for (const itemId of Object.keys(itemNotes)) {
       const cartItem = cartItems.find(ci => ci._id.toString() === itemId);
       if (cartItem) {
-        cartItem.note = itemNotes[itemId] || "";
+        cartItem.note = (itemNotes[itemId] || "").slice(0, NOTE_MAX);
         await cartItem.save();
       }
     }

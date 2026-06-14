@@ -24,7 +24,8 @@ function requireOwns(Model, ownerField = "userId") {
       req.resource = doc;
       next();
     } catch (err) {
-      res.status(500).json({ error: "Server error: " + err.message });
+      console.error("[ownsResource] Error:", err.message);
+      res.status(500).json({ error: "Server error" });
     }
   };
 }
