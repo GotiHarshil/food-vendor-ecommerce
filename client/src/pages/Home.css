@@ -503,11 +503,24 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: gap 0.3s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: gap 0.3s, color 0.2s;
 }
 
-.special-order-btn:hover {
+.special-order-btn:hover:not(:disabled) {
   gap: 11px;
+}
+
+.special-order-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.special-order-btn.added {
+  color: #16a34a;
 }
 
 /* ===== FEATURES ===== */

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useCart } from "../context/cart-context";
 import "./Home.css";
 
 function CountUp({ end, duration = 2000, suffix = "" }) {
@@ -72,9 +73,32 @@ export default function Home() {
   const [stats, setStats] = useState({ totalItems: 0, totalOrders: 0, totalUsers: 0 });
   const [storeInfo, setStoreInfo] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [addingToCart, setAddingToCart] = useState({});
+  const [addedToCart, setAddedToCart] = useState({});
+  const { refreshCart } = useCart();
 
   const pageRef = useRef(null);
   useScrollReveal(pageRef, todaysSpecials.length);
+
+  const handleAddToCart = async (itemId) => {
+    setAddingToCart((prev) => ({ ...prev, [itemId]: true }));
+    try {
+      const response = await fetch(`/api/food/cart/add/${itemId}`, {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        credentials: "include",
+      });
+      if (response.ok) {
+        refreshCart();
+        setAddedToCart((prev) => ({ ...prev, [itemId]: true }));
+        setTimeout(() => setAddedToCart((prev) => ({ ...prev, [itemId]: false })), 1500);
+      }
+    } catch (err) {
+      console.error("[Home] Failed to add to cart:", err);
+    } finally {
+      setAddingToCart((prev) => ({ ...prev, [itemId]: false }));
+    }
+  };
 
   useEffect(() => {
     // Fetch today's specials
@@ -257,9 +281,19 @@ export default function Home() {
                   <p className="special-desc">{item.description}</p>
                   <div className="special-bottom">
                     <span className="special-price">${item.price}</span>
-                    <Link to="/menu" className="special-order-btn">
-                      Order Now <i className="fa-solid fa-arrow-right"></i>
-                    </Link>
+                    <button
+                      className={`special-order-btn${addedToCart[item._id] ? " added" : ""}`}
+                      onClick={() => handleAddToCart(item._id)}
+                      disabled={addingToCart[item._id] || addedToCart[item._id]}
+                    >
+                      {addedToCart[item._id] ? (
+                        <><i className="fa-solid fa-check"></i> Added!</>
+                      ) : addingToCart[item._id] ? (
+                        <><i className="fa-solid fa-spinner fa-spin"></i> Adding…</>
+                      ) : (
+                        <><i className="fa-solid fa-cart-plus"></i> Add to Cart</>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
