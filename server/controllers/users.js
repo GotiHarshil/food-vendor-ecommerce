@@ -3,6 +3,8 @@ const passport = require("passport");
 const crypto = require("crypto");
 const { sendEmail, emailTemplates } = require("../utils/emailService");
 
+const REMEMBER_ME_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
+
 module.exports.renderSignupForm = (req, res) => {
   res.render("users/signup");
 };
@@ -100,6 +102,11 @@ module.exports.loginAPI = async (req, res, next) => {
       if (err) {
         console.error("req.login error:", err);
         return res.status(500).json({ error: "Login failed" });
+      }
+      if (req.body.rememberMe) {
+        req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE;
+      } else {
+        req.session.cookie.expires = false;
       }
       res.json({ success: true, message: "Logged in successfully" });
     });

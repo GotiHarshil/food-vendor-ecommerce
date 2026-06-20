@@ -5,6 +5,7 @@ import "./Auth.css";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function Login() {
       const response = await fetch("/api/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, rememberMe }),
         credentials: "include",
       });
 
@@ -77,11 +78,21 @@ export default function Login() {
               required
               disabled={loading}
             />
-            <div style={{ textAlign: "right", marginTop: "6px" }}>
-              <Link to="/forgot-password" style={{ fontSize: "0.82rem", color: "var(--primary)", textDecoration: "none" }}>
-                Forgot password?
-              </Link>
-            </div>
+          </div>
+
+          <div className="remember-me-row">
+            <label className="remember-me-label">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={loading}
+              />
+              Remember me
+            </label>
+            <Link to="/forgot-password" style={{ fontSize: "0.82rem", color: "var(--primary)", textDecoration: "none" }}>
+              Forgot password?
+            </Link>
           </div>
 
           <button type="submit" className="btn-primary" disabled={loading}>
