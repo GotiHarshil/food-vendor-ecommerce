@@ -2,7 +2,7 @@
 const Food = require("../models/Food");
 const Order = require("../models/Order");
 const User = require("../models/user");
-const CartItem = require("../models/cartItem");
+const CartItem = require("../models/CartItem");
 const StoreSettings = require("../models/StoreSettings");
 const AuditLog = require("../models/AuditLog");
 const { logAudit } = require("../utils/audit");

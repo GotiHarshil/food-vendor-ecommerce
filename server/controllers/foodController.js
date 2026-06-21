@@ -1,6 +1,6 @@
 // server/controllers/foodController.js
 const Food = require("../models/Food");
-const CartItem = require("../models/cartItem");
+const CartItem = require("../models/CartItem");
 const Order = require("../models/Order");
 const StoreSettings = require("../models/StoreSettings");
 const { broadcastOrders } = require("./adminController");
