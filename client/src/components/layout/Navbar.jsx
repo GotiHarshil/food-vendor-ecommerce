@@ -46,7 +46,7 @@ export function Navbar() {
           to="/"
           className="flex items-center gap-2 text-xl font-extrabold tracking-tight"
         >
-          <img src="/brand-icon.png" alt="MANU" className="h-9 w-9 rounded-xl" />
+          <img src="https://res.cloudinary.com/dr0qdawz6/image/upload/v1782095420/food-vendor/brand-icon.png" alt="MANU" className="h-9 w-9 rounded-xl" />
           <span className="text-ink-900">
             MA<span className="text-gradient-brand">NU</span>
           </span>
