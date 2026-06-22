@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { Menu as MenuIcon, ShoppingBag, UtensilsCrossed, X, LogOut, User } from "lucide-react";
+import { Menu as MenuIcon, ShoppingBag, X, LogOut, User } from "lucide-react";
 import { Container } from "../ui/Container";
 import { Button } from "../ui/Button";
 import { useCart } from "../../context/cart-context";
@@ -46,9 +46,7 @@ export function Navbar() {
           to="/"
           className="flex items-center gap-2 text-xl font-extrabold tracking-tight"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-[#ff7b00] to-brand-500 text-white shadow-[var(--shadow-glow)]">
-            <UtensilsCrossed className="w-5 h-5" />
-          </span>
+          <img src="/brand-icon.png" alt="MANU" className="h-9 w-9 rounded-xl" />
           <span className="text-ink-900">
             MA<span className="text-gradient-brand">NU</span>
           </span>
