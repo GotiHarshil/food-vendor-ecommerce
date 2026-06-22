@@ -1,7 +1,7 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://YOUR-RENDER-APP.onrender.com/api/$1" },
-    { "source": "/images/(.*)", "destination": "https://YOUR-RENDER-APP.onrender.com/images/$1" },
+    { "source": "/api/(.*)", "destination": "https://manudabeli-server.onrender.com/api/$1" },
+    { "source": "/images/(.*)", "destination": "https://manudabeli-server.onrender.com/images/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
