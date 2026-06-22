@@ -7,16 +7,12 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const path = require("path");
-const flash = require("connect-flash");
-const methodOverride = require("method-override");
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js");
-
-const ejsMate = require("ejs-mate");
 
 const userRoutes = require("./routes/user.js");
 const foodRoutes = require("./routes/foodRoutes.js");
@@ -52,12 +48,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// View engine setup
-app.engine("ejs", ejsMate);
-app.set("view engine", "ejs");
-app.set("views", [path.join(__dirname, "..", "client", "views")]);
 app.use(express.static(path.join(__dirname, "public")));
-app.use(methodOverride("_method"));
 
 const store = MongoStore.create({
   mongoUrl: process.env.MONGO_URL,
@@ -82,7 +73,6 @@ const sessionOptions = {
 };
 
 app.use(session(sessionOptions));
-app.use(flash());
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -92,15 +82,6 @@ passport.use(
 );
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
-
-app.use((req, res, next) => {
-  res.locals.success = req.flash("success");
-  res.locals.error = req.flash("error");
-  res.locals.currUser = req.user;
-  res.locals.currentPath = req.path;
-  res.locals.currentUrl = req.originalUrl;
-  next();
-});
 
 // Rate limiting
 app.use("/api", globalApiLimiter);
@@ -112,23 +93,13 @@ app.use("/api/admin", adminRoutes);
 
 // Error handling
 app.all("*", (req, res, next) => {
-  // For API requests return JSON 404
-  if (req.path.startsWith("/api/")) {
-    return res.status(404).json({ error: "Endpoint not found" });
-  }
-  next(new ExpressError(404, "Page not found"));
+  next(new ExpressError(404, "Endpoint not found"));
 });
 
 app.use((err, req, res, next) => {
   let { statusCode = 500 } = err;
   if (res.headersSent) return next(err);
-
-  // For API requests, return JSON errors
-  if (req.path.startsWith("/api/") || req.headers["x-requested-with"] === "XMLHttpRequest") {
-    return res.status(statusCode).json({ error: err.message || "Something went wrong" });
-  }
-
-  res.status(statusCode).render("error", { err });
+  res.status(statusCode).json({ error: err.message || "Something went wrong" });
 });
 
 // Start server

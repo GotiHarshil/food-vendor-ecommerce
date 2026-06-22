@@ -35,10 +35,7 @@ router.post(
     if (result.deletedCount > 0 && req.user) {
       logAudit(req, "CART_REMOVED", "CartItem", foodId, { userId });
     }
-    if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
-      return res.json({ success: true, deletedCount: result.deletedCount });
-    }
-    res.redirect("back");
+    res.json({ success: true, deletedCount: result.deletedCount });
   })
 );
 

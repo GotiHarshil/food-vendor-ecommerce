@@ -19,17 +19,7 @@ module.exports.getFoods = async (req, res, next) => {
     isDeleted: { $ne: true },
     isTemporarilyHidden: { $ne: true },
   });
-
-  if (
-    req.headers["x-requested-with"] === "XMLHttpRequest" ||
-    req.accepts("json")
-  ) {
-    return res.json(foods);
-  }
-
-  const userId = getVisitorId(req);
-  const cartItems = await CartItem.find({ userId });
-  res.render("pages/menu", { foods, cartItems });
+  res.json(foods);
 };
 
 // GET /api/food/todays-special — public endpoint
@@ -77,23 +67,16 @@ module.exports.getCartItems = async (req, res, next) => {
   const userId = getVisitorId(req);
   const cartItems = await CartItem.find({ userId }).populate("foodId");
 
-  if (
-    req.headers["x-requested-with"] === "XMLHttpRequest" ||
-    req.accepts("json")
-  ) {
-    const transformed = cartItems.map((item) => ({
-      _id: item._id,
-      foodId: item.foodId?._id || item.foodId,
-      name: item.name,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      qty: item.qty,
-      note: item.note || "",
-    }));
-    return res.json(transformed);
-  }
-
-  res.render("pages/cart", { cartItems });
+  const transformed = cartItems.map((item) => ({
+    _id: item._id,
+    foodId: item.foodId?._id || item.foodId,
+    name: item.name,
+    price: item.price,
+    imageUrl: item.imageUrl,
+    qty: item.qty,
+    note: item.note || "",
+  }));
+  res.json(transformed);
 };
 
 // POST /api/food/cart/add/:id
@@ -109,20 +92,14 @@ module.exports.addToCart = async (req, res, next) => {
 
   if (item) {
     if (item.qty >= 15) {
-      if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
-        return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
-      }
-      return res.redirect("back");
+      return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
     }
 
     // Check total cart items limit (40)
     const allCartItems = await CartItem.find({ userId });
     const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
     if (currentTotal >= 40) {
-      if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
-        return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
-      }
-      return res.redirect("back");
+      return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
     }
 
     item.qty += 1;
@@ -132,10 +109,7 @@ module.exports.addToCart = async (req, res, next) => {
     const allCartItems = await CartItem.find({ userId });
     const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
     if (currentTotal >= 40) {
-      if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
-        return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
-      }
-      return res.redirect("back");
+      return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
     }
 
     item = await CartItem.create({
@@ -148,11 +122,7 @@ module.exports.addToCart = async (req, res, next) => {
     });
   }
 
-  if (req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json")) {
-    return res.json({ success: true, qty: item.qty });
-  }
-
-  res.redirect("/api/food/menu");
+  res.json({ success: true, qty: item.qty });
 };
 
 // POST /api/food/cart/update/:id
@@ -161,27 +131,23 @@ module.exports.updateCart = async (req, res) => {
   const foodId = req.params.id;
   const action = req.body.action;
   const qty = req.body.qty;
-  const wantsJson = req.headers["x-requested-with"] === "XMLHttpRequest" || req.accepts("json");
 
   let item = await CartItem.findOne({ userId, foodId });
 
   if (!item) {
-    if (wantsJson) return res.status(404).json({ error: "Item not in cart" });
-    return res.redirect("back");
+    return res.status(404).json({ error: "Item not in cart" });
   }
 
   if (action === "inc") {
     if (item.qty >= 15) {
-      if (wantsJson) return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
-      return res.redirect("back");
+      return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
     }
 
     // Check total cart items limit (40)
     const allCartItems = await CartItem.find({ userId });
     const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
     if (currentTotal >= 40) {
-      if (wantsJson) return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
-      return res.redirect("back");
+      return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
     }
 
     item.qty++;
@@ -189,19 +155,16 @@ module.exports.updateCart = async (req, res) => {
     item.qty--;
     if (item.qty <= 0) {
       await CartItem.deleteOne({ userId, foodId });
-      if (wantsJson) return res.json({ success: true, deleted: true });
-      return res.redirect("back");
+      return res.json({ success: true, deleted: true });
     }
   } else if (action === "set" && qty) {
     const newQty = parseInt(qty);
     if (newQty <= 0) {
       await CartItem.deleteOne({ userId, foodId });
-      if (wantsJson) return res.json({ success: true, deleted: true });
-      return res.redirect("back");
+      return res.json({ success: true, deleted: true });
     }
     if (newQty > 15) {
-      if (wantsJson) return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
-      return res.redirect("back");
+      return res.status(400).json({ error: "Maximum 15 of this item allowed per order" });
     }
 
     // Check total cart items limit (40) when increasing quantity via set
@@ -210,17 +173,14 @@ module.exports.updateCart = async (req, res) => {
       const currentTotal = allCartItems.reduce((sum, ci) => sum + ci.qty, 0);
       const increaseBy = newQty - item.qty;
       if (currentTotal + increaseBy > 40) {
-        if (wantsJson) return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
-        return res.redirect("back");
+        return res.status(400).json({ error: "⚠️ Cart limit exceeded. Maximum 40 items per order." });
       }
     }
     item.qty = newQty;
   }
 
   await item.save();
-
-  if (wantsJson) return res.json({ success: true, qty: item.qty });
-  return res.redirect("back");
+  res.json({ success: true, qty: item.qty });
 };
 
 // POST /api/food/checkout — place order (requires login via route middleware)
