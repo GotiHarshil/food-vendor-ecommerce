@@ -115,7 +115,7 @@ export default function Navbar() {
       <nav className={`site-navbar${scrolled ? " navbar-scrolled" : ""}`}>
         <Link to="/" className="brand">
           <img
-            src="/brand-logo.png"
+            src="https://res.cloudinary.com/dr0qdawz6/image/upload/v1782095420/food-vendor/brand-icon.png"
             alt="Food Truck Logo"
             className="brand-icon"
           />
