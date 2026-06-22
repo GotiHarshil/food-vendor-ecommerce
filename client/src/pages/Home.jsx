@@ -199,7 +199,7 @@ export default function Home() {
           <div className="hero-card">
             <div className="hero-card-glow"></div>
             <div className="hero-card-img">
-              <img src="https://res.cloudinary.com/dr0qdawz6/image/upload/v1779002157/food-vendor/manu-logo.png" alt="MANU Logo" />
+              <img src="/logo.svg" alt="MANU Logo" />
             </div>
             <div className="floating-badge badge-top">
               <i className="fa-solid fa-star" style={{ color: "#f59e0b" }}></i>
