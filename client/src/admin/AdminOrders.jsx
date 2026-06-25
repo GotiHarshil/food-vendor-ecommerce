@@ -1,4 +1,25 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const play = () => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+      osc.onended = () => ctx.close();
+    };
+    ctx.state === "suspended" ? ctx.resume().then(play) : play();
+  } catch (_) {}
+}
 
 const STATUSES = ["all", "pending", "preparing", "ready", "picked_up", "cancelled"];
 const STATUS_LABELS = {
@@ -22,6 +43,7 @@ export default function AdminOrders() {
   const [connected, setConnected] = useState(false);
   const [filter, setFilter] = useState("all");
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const knownOrderIds = useRef(null);
   const [cancelReason, setCancelReason] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
   const [translating, setTranslating] = useState(null);
@@ -31,7 +53,15 @@ export default function AdminOrders() {
     fetch("/api/admin/orders?limit=100", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
-        setAllOrders(data.orders || []);
+        const orders = data.orders || [];
+        if (knownOrderIds.current === null) {
+          knownOrderIds.current = new Set(orders.map((o) => o._id));
+        } else {
+          const hasNew = orders.some((o) => !knownOrderIds.current.has(o._id));
+          if (hasNew) playNotificationSound();
+          knownOrderIds.current = new Set(orders.map((o) => o._id));
+        }
+        setAllOrders(orders);
         setLoading(false);
       })
       .catch(console.error);
@@ -72,12 +102,16 @@ export default function AdminOrders() {
 
         esInstance.onmessage = (e) => {
           try {
-            if (e.data.startsWith(":")) {
-              // Ignore ping messages
-              return;
-            }
+            if (e.data.startsWith(":")) return;
             const orders = JSON.parse(e.data);
             console.log("[AdminOrders] Received SSE message with", orders.length, "orders");
+            if (knownOrderIds.current === null) {
+              knownOrderIds.current = new Set(orders.map((o) => o._id));
+            } else {
+              const hasNew = orders.some((o) => !knownOrderIds.current.has(o._id));
+              if (hasNew) playNotificationSound();
+              knownOrderIds.current = new Set(orders.map((o) => o._id));
+            }
             setAllOrders(orders);
             setLoading(false);
           } catch (err) {
