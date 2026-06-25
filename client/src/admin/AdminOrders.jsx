@@ -44,6 +44,7 @@ export default function AdminOrders() {
   const [filter, setFilter] = useState("all");
   const [expandedIds, setExpandedIds] = useState(new Set());
   const knownOrderIds = useRef(null);
+  const connectedRef = useRef(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
   const [translating, setTranslating] = useState(null);
@@ -97,6 +98,7 @@ export default function AdminOrders() {
 
         esInstance.onopen = () => {
           console.log("[AdminOrders] SSE connection opened");
+          connectedRef.current = true;
           setConnected(true);
         };
 
@@ -122,6 +124,7 @@ export default function AdminOrders() {
         esInstance.onerror = (err) => {
           console.error("[AdminOrders] SSE connection error:", err);
           console.error("[AdminOrders] EventSource readyState:", esInstance.readyState);
+          connectedRef.current = false;
           setConnected(false);
         };
       })
@@ -132,7 +135,7 @@ export default function AdminOrders() {
 
     // Fallback: Poll for orders every 5 seconds if SSE is not connected
     const pollInterval = setInterval(() => {
-      if (!connected) {
+      if (!connectedRef.current) {
         console.log("[AdminOrders] Polling for orders (SSE not connected)");
         fetchOrders();
       }
@@ -145,7 +148,7 @@ export default function AdminOrders() {
       }
       clearInterval(pollInterval);
     };
-  }, [fetchOrders, connected]);
+  }, [fetchOrders]);
 
   const orders = filter === "all"
     ? allOrders
