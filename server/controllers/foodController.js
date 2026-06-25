@@ -65,7 +65,7 @@ module.exports.getStats = async (req, res) => {
 // GET /api/food/cart
 module.exports.getCartItems = async (req, res, next) => {
   const userId = getVisitorId(req);
-  const cartItems = await CartItem.find({ userId }).populate("foodId");
+  const cartItems = await CartItem.find({ userId });
 
   const transformed = cartItems.map((item) => ({
     _id: item._id,

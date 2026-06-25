@@ -253,7 +253,7 @@ export default function Cart() {
                 className={`cart-item${removingId === item._id ? " removing" : ""}`}
               >
                 <div className="ci-thumb">
-                  <img src={item.imageUrl} alt={item.name} />
+                  <img src={item.imageUrl} alt={item.name} loading="lazy" />
                 </div>
 
                 <div className="ci-body">

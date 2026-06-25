@@ -83,11 +83,10 @@ export default function Menu() {
 
   const fetchData = async () => {
     try {
-      const [foodsRes, cartRes, favRes, ordersRes] = await Promise.all([
+      // Critical path: render menu + cart immediately without waiting for non-essential data
+      const [foodsRes, cartRes] = await Promise.all([
         fetch("/api/food/menu", { credentials: "include" }),
         fetch("/api/food/cart", { credentials: "include" }),
-        fetch("/api/user/favorites", { credentials: "include" }),
-        fetch("/api/food/my-orders", { credentials: "include" }),
       ]);
 
       if (!foodsRes.ok) throw new Error("Failed to fetch menu");
@@ -95,48 +94,56 @@ export default function Menu() {
       const foodsData = await foodsRes.json();
       const cartData = cartRes.ok ? await cartRes.json() : [];
 
-      // Fetch favorites (ok if 401 - guest user)
-      let favoriteIds = new Set();
-      if (favRes.ok) {
-        const favData = await favRes.json();
-        favoriteIds = new Set(favData.map((f) => String(f._id)));
-      }
-
-      // Fetch orders (ok if 401 - guest user)
-      let ordersData = [];
-      if (ordersRes.ok) {
-        ordersData = await ordersRes.json();
-      }
-
       setFoods(foodsData);
       setCartItems(cartData);
-      setFavoritedIds(favoriteIds);
-
-      // Calculate recommendations
-      if (ordersData.length > 0) {
-        const categoryCounts = {};
-        ordersData.forEach((order) => {
-          order.items?.forEach((item) => {
-            const food = foodsData.find((f) => String(f._id) === String(item.foodId));
-            if (food) {
-              categoryCounts[food.category] = (categoryCounts[food.category] || 0) + 1;
-            }
-          });
-        });
-
-        if (Object.keys(categoryCounts).length > 0) {
-          const topCategory = Object.keys(categoryCounts).reduce((a, b) =>
-            categoryCounts[a] > categoryCounts[b] ? a : b
-          );
-          setRecommendedCategory(topCategory);
-        }
-      }
-
       refreshCart();
+
+      // Non-critical: load favorites + order history in background after items are visible
+      Promise.all([
+        fetch("/api/user/favorites", { credentials: "include" }),
+        fetch("/api/food/my-orders", { credentials: "include" }),
+      ]).then(async ([favRes, ordersRes]) => {
+        if (favRes.ok) {
+          const favData = await favRes.json();
+          setFavoritedIds(new Set(favData.map((f) => String(f._id))));
+        }
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          if (ordersData.length > 0) {
+            const categoryCounts = {};
+            ordersData.forEach((order) => {
+              order.items?.forEach((item) => {
+                const food = foodsData.find((f) => String(f._id) === String(item.foodId));
+                if (food) {
+                  categoryCounts[food.category] = (categoryCounts[food.category] || 0) + 1;
+                }
+              });
+            });
+            if (Object.keys(categoryCounts).length > 0) {
+              const topCategory = Object.keys(categoryCounts).reduce((a, b) =>
+                categoryCounts[a] > categoryCounts[b] ? a : b
+              );
+              setRecommendedCategory(topCategory);
+            }
+          }
+        }
+      }).catch(() => {});
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshCartOnly = async () => {
+    try {
+      const cartRes = await fetch("/api/food/cart", { credentials: "include" });
+      if (cartRes.ok) {
+        setCartItems(await cartRes.json());
+        refreshCart();
+      }
+    } catch (err) {
+      console.error("Failed to refresh cart:", err);
     }
   };
 
@@ -283,7 +290,7 @@ export default function Menu() {
                       <FoodCard
                         food={food}
                         cartItems={cartItems}
-                        onUpdate={fetchData}
+                        onUpdate={refreshCartOnly}
                         isFavorited={favoritedIds.has(String(food._id))}
                         onToggleFavorite={handleToggleFavorite}
                       />
@@ -298,7 +305,7 @@ export default function Menu() {
                   key={food._id}
                   food={food}
                   cartItems={cartItems}
-                  onUpdate={fetchData}
+                  onUpdate={refreshCartOnly}
                   isFavorited={favoritedIds.has(String(food._id))}
                   onToggleFavorite={handleToggleFavorite}
                 />
@@ -328,7 +335,7 @@ export default function Menu() {
                           key={food._id}
                           food={food}
                           cartItems={cartItems}
-                          onUpdate={fetchData}
+                          onUpdate={refreshCartOnly}
                           isFavorited={favoritedIds.has(String(food._id))}
                           onToggleFavorite={handleToggleFavorite}
                         />
