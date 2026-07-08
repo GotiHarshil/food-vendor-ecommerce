@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import "./OrderConfirmation.css";
 
 const STATUS_TIMELINE = {
@@ -16,28 +16,30 @@ function getStatusPosition(status) {
 }
 
 export default function OrderConfirmation() {
-  const location = useLocation();
-  const order = location.state?.order;
-  const [liveOrder, setLiveOrder] = useState(order);
-  const [syncError, setSyncError] = useState(null);
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session_id");
 
-  // Poll for order status updates
+  const [liveOrder, setLiveOrder] = useState(null);
+  const [loadError, setLoadError] = useState(null); // fatal: never resolved an order
+  const [syncError, setSyncError] = useState(null); // non-fatal: a later poll failed
+
+  // Resolve the order from the Stripe session_id, then poll it for live status.
   useEffect(() => {
-    if (!order?._id) {
-      console.error("[OrderConfirmation] No order ID available");
+    if (!sessionId) {
+      console.error("[OrderConfirmation] No session_id in URL");
+      setLoadError("We couldn't find your order. Please check your email or contact support.");
       return;
     }
 
+    let cancelled = false;
+    let pollInterval;
     let pollAttempts = 0;
-    let successCount = 0;
 
-    const pollOrder = async () => {
+    const pollOrder = async (orderId) => {
       pollAttempts++;
       try {
         // Force fresh data with cache-busting timestamp
-        const url = `/api/food/orders/${order._id}?t=${Date.now()}`;
-        console.log(`[OrderConfirmation] Poll #${pollAttempts}: Fetching ${url}`);
-
+        const url = `/api/food/orders/${orderId}?t=${Date.now()}`;
         const res = await fetch(url, {
           method: "GET",
           credentials: "include",
@@ -48,57 +50,68 @@ export default function OrderConfirmation() {
           },
         });
 
-        console.log(`[OrderConfirmation] Poll #${pollAttempts}: Got response status ${res.status}`);
+        if (cancelled) return;
 
         if (res.ok) {
           const data = await res.json();
-          console.log(`[OrderConfirmation] Poll #${pollAttempts} SUCCESS:`, {
-            status: data.status,
-            _id: data._id,
-            updatedAt: data.updatedAt,
-          });
           setLiveOrder(data);
           setSyncError(null);
-          successCount++;
         } else {
-          const errorText = await res.text();
-          console.error(`[OrderConfirmation] Poll #${pollAttempts} HTTP ${res.status}:`, errorText);
+          console.error(`[OrderConfirmation] Poll #${pollAttempts} HTTP ${res.status}`);
           setSyncError(`Failed to sync: HTTP ${res.status}`);
         }
       } catch (err) {
-        console.error(`[OrderConfirmation] Poll #${pollAttempts} EXCEPTION:`, err);
-        setSyncError(`Sync error: ${err.message}`);
+        if (!cancelled) {
+          console.error(`[OrderConfirmation] Poll #${pollAttempts} EXCEPTION:`, err);
+          setSyncError(`Sync error: ${err.message}`);
+        }
       }
     };
 
-    // Initial fetch immediately
-    console.log("[OrderConfirmation] Starting initial fetch");
-    pollOrder();
+    // The order is created synchronously when the Stripe Checkout session is created
+    // (before the customer even leaves for Stripe), so this should resolve on the
+    // first try — the small retry budget below just covers a transient blip.
+    const resolveOrder = async (attempt = 1) => {
+      try {
+        const res = await fetch(`/api/food/checkout/session/${sessionId}`, { credentials: "include" });
+        if (cancelled) return;
 
-    // Then poll every 2 seconds
-    const pollInterval = setInterval(pollOrder, 2000);
+        if (res.ok) {
+          const data = await res.json();
+          setLiveOrder(data);
+          pollOrder(data._id);
+          pollInterval = setInterval(() => pollOrder(data._id), 2000);
+        } else if (attempt < 5) {
+          setTimeout(() => resolveOrder(attempt + 1), 1000);
+        } else {
+          setLoadError("We couldn't find your order. Please check your email or contact support.");
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (attempt < 5) {
+          setTimeout(() => resolveOrder(attempt + 1), 1000);
+        } else {
+          console.error("[OrderConfirmation] Failed to resolve order from session:", err);
+          setLoadError("We couldn't find your order. Please check your email or contact support.");
+        }
+      }
+    };
+
+    resolveOrder();
 
     return () => {
-      console.log(`[OrderConfirmation] Cleanup: ${successCount} successful polls out of ${pollAttempts} attempts`);
-      clearInterval(pollInterval);
+      cancelled = true;
+      if (pollInterval) clearInterval(pollInterval);
     };
-  }, [order?._id]);
+  }, [sessionId]);
 
-  const currentStatusPos = getStatusPosition(liveOrder.status);
-
-  const subtotal = liveOrder.items?.reduce(
-    (sum, item) => sum + (item.price || 0) * (item.qty || 0),
-    0
-  ) || 0;
-
-  // Show error if no order data
-  if (!order) {
+  if (loadError) {
     return (
       <div className="confirmation-page">
         <div className="confirmation-error">
           <i className="fa-solid fa-circle-exclamation"></i>
           <h2>No Order Found</h2>
-          <p>We couldn't find your order. Please check your email or contact support.</p>
+          <p>{loadError}</p>
           <Link to="/menu" className="btn-primary">
             <i className="fa-solid fa-utensils"></i> Return to Menu
           </Link>
@@ -106,6 +119,27 @@ export default function OrderConfirmation() {
       </div>
     );
   }
+
+  if (!liveOrder) {
+    return (
+      <div className="confirmation-page">
+        <div className="confirmation-header">
+          <div className="success-icon">
+            <i className="fa-solid fa-circle-notch fa-spin"></i>
+          </div>
+          <h1>Confirming your order...</h1>
+          <p className="confirmation-subtitle">Just a moment while we confirm your payment.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentStatusPos = getStatusPosition(liveOrder.status);
+
+  const subtotal = liveOrder.items?.reduce(
+    (sum, item) => sum + (item.price || 0) * (item.qty || 0),
+    0
+  ) || 0;
 
   return (
     <div className="confirmation-page">
@@ -167,7 +201,16 @@ export default function OrderConfirmation() {
         </div>
 
         {/* Current Status Message */}
-        {liveOrder.status === "ready" && (
+        {liveOrder.paymentStatus === "unpaid" && (
+          <div className="status-message pending">
+            <i className="fa-solid fa-circle-notch fa-spin"></i>
+            <div>
+              <strong>Confirming your payment...</strong>
+              <p>This usually takes just a few seconds.</p>
+            </div>
+          </div>
+        )}
+        {liveOrder.paymentStatus !== "unpaid" && liveOrder.status === "ready" && (
           <div className="status-message ready">
             <i className="fa-solid fa-bell"></i>
             <div>
@@ -176,7 +219,7 @@ export default function OrderConfirmation() {
             </div>
           </div>
         )}
-        {liveOrder.status === "preparing" && (
+        {liveOrder.paymentStatus !== "unpaid" && liveOrder.status === "preparing" && (
           <div className="status-message preparing">
             <i className="fa-solid fa-fire-burner"></i>
             <div>
@@ -185,7 +228,7 @@ export default function OrderConfirmation() {
             </div>
           </div>
         )}
-        {liveOrder.status === "pending" && (
+        {liveOrder.paymentStatus !== "unpaid" && liveOrder.status === "pending" && (
           <div className="status-message pending">
             <i className="fa-solid fa-hourglass-start"></i>
             <div>

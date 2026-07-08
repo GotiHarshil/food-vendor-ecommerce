@@ -6,6 +6,7 @@ const CartItem = require("../models/CartItem");
 const StoreSettings = require("../models/StoreSettings");
 const AuditLog = require("../models/AuditLog");
 const { logAudit } = require("../utils/audit");
+const { attemptCancelOrder, ADMIN_CANCELLABLE_STATUSES } = require("../utils/orderCancellation");
 const { uploadToCloudinary } = require("../utils/uploadToCloudinary");
 const { sendEmail, emailTemplates, statusInfo } = require("../utils/emailService");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -16,7 +17,12 @@ const sseClients = new Set();
 async function broadcastOrders() {
   if (sseClients.size === 0) return;
   try {
-    const orders = await Order.find({}).sort({ createdAt: -1 }).limit(100).lean();
+    // Exclude orders still mid-checkout (unpaid) — the kitchen shouldn't see an
+    // order nobody has paid for yet.
+    const orders = await Order.find({ paymentStatus: { $ne: "unpaid" } })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
     const payload = `data: ${JSON.stringify(orders)}\n\n`;
     let sent = 0;
     for (const client of sseClients) {
@@ -300,7 +306,8 @@ module.exports.streamOrders = (req, res) => {
 module.exports.getAllOrders = async (req, res) => {
   const { status, page = 1 } = req.query;
   const limit = Math.min(Number(req.query.limit) || 20, 100);
-  const filter = {};
+  // Exclude orders still mid-checkout (unpaid) — same reasoning as broadcastOrders() above.
+  const filter = { paymentStatus: { $ne: "unpaid" } };
   if (status && status !== "all") filter.status = status;
 
   const orders = await Order.find(filter)
@@ -346,24 +353,30 @@ module.exports.updateOrderStatus = async (req, res) => {
 
 module.exports.cancelOrder = async (req, res) => {
   const { id } = req.params;
-  const { reason } = req.body;
+  const reason = req.body.reason || "Cancelled by admin";
 
-  const order = await Order.findByIdAndUpdate(
-    id,
-    { status: "cancelled", adminNote: reason || "Cancelled by admin" },
-    { new: true }
-  );
+  const order = await Order.findById(id);
   if (!order) return res.status(404).json({ error: "Order not found" });
 
+  const result = await attemptCancelOrder(order, {
+    reason,
+    cancelledBy: "admin",
+    allowedStatuses: ADMIN_CANCELLABLE_STATUSES,
+  });
+
+  if (!result.ok) {
+    return res.status(400).json({ error: result.error });
+  }
+
   // Send cancellation email to customer
-  const user = await User.findById(order.userId);
+  const user = await User.findById(result.order.userId);
   if (user && user.email) {
-    const emailContent = emailTemplates.orderCancelled(order, user, reason || "Cancelled by admin");
+    const emailContent = emailTemplates.orderCancelled(result.order, user, reason);
     sendEmail(user.email, emailContent.subject, emailContent.html).catch(console.error);
   }
 
-  res.json(order);
-  logAudit(req, "ORDER_CANCELLED", "Order", id, { reason });
+  res.json(result.order);
+  logAudit(req, "ORDER_CANCELLED", "Order", id, { reason, cancelledBy: "admin" });
   broadcastOrders().catch(console.error);
 };
 

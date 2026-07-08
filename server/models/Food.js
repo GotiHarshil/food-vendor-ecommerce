@@ -21,6 +21,8 @@ const foodSchema = new mongoose.Schema(
     isTodaysSpecial: { type: Boolean, default: false },
     isTemporarilyHidden: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false }, // soft delete
+    avgRating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

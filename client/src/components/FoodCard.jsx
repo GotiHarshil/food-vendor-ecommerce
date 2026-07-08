@@ -146,6 +146,13 @@ export default function FoodCard({ food, cartItems = [], onUpdate, isFavorited =
 
       <div className="card-body">
         <h3 className="card-title">{food.name}</h3>
+        {food.reviewCount > 0 && (
+          <div className="card-rating" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", color: "#6b7280" }}>
+            <i className="fa-solid fa-star" style={{ color: "#f59e0b" }}></i>
+            <span>{food.avgRating.toFixed(1)}</span>
+            <span>({food.reviewCount})</span>
+          </div>
+        )}
         {food.description && (
           <p className="card-description">{food.description}</p>
         )}

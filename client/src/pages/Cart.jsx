@@ -142,7 +142,7 @@ export default function Cart() {
         note: orderNote,
         itemNotes: itemNotes
       };
-      const response = await fetch("/api/food/checkout", {
+      const response = await fetch("/api/food/checkout/create-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(checkoutData),
@@ -150,13 +150,11 @@ export default function Cart() {
       });
       const data = await response.json();
 
-      if (response.ok && data.order) {
-        console.log("[Cart] Checkout successful, navigating to confirmation");
-        // Navigate to confirmation page with order data
-        navigate("/order-confirmation", {
-          state: { order: data.order },
-          replace: true,
-        });
+      if (response.ok && data.url) {
+        console.log("[Cart] Checkout session created, redirecting to Stripe");
+        // Full redirect to Stripe-hosted Checkout — payment confirmation happens
+        // via webhook, then the customer lands back on /order-confirmation
+        window.location.href = data.url;
       } else {
         // Better error messages based on error type
         let errorMsg = data.error || "Checkout failed. Please try again.";

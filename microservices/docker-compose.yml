@@ -1,0 +1,70 @@
+services:
+  # ── MongoDB ──────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: manu-mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"   # 27018 on host to avoid conflicting with local mongo
+    volumes:
+      - mongo-data:/data/db
+
+  # ── Auth Service ─────────────────────────────────────────
+  auth-service:
+    build: ./auth-service
+    container_name: manu-auth
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    environment:
+      PORT: 4001
+      MONGO_URI: mongodb://mongo:27017/manu-auth
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+    depends_on:
+      - mongo
+
+  # ── Order Service ─────────────────────────────────────────
+  order-service:
+    build: ./order-service
+    container_name: manu-orders
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    environment:
+      PORT: 4002
+      MONGO_URI: mongodb://mongo:27017/manu-orders
+      JWT_SECRET: ${JWT_SECRET}
+    depends_on:
+      - mongo
+
+  # ── Translation Service ───────────────────────────────────
+  translation-service:
+    build: ./translation-service
+    container_name: manu-translation
+    restart: unless-stopped
+    ports:
+      - "4003:4003"
+    environment:
+      PORT: 4003
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+  # ── API Gateway ───────────────────────────────────────────
+  api-gateway:
+    build: ./api-gateway
+    container_name: manu-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      AUTH_SERVICE_URL: http://auth-service:4001
+      ORDER_SERVICE_URL: http://order-service:4002
+      TRANSLATION_SERVICE_URL: http://translation-service:4003
+    depends_on:
+      - auth-service
+      - order-service
+      - translation-service
+
+volumes:
+  mongo-data:

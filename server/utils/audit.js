@@ -12,4 +12,17 @@ function logAudit(req, action, resourceType, resourceId, meta = {}) {
   }).catch((err) => console.error("Audit log error:", err));
 }
 
-module.exports = { logAudit };
+// For system-originated events with no authenticated req (e.g. Stripe webhooks).
+function logAuditSystem(action, resourceType, resourceId, meta = {}, actor = {}) {
+  AuditLog.create({
+    actorId: actor.actorId,
+    actorEmail: actor.actorEmail || "system:stripe-webhook",
+    action,
+    resourceType,
+    resourceId: String(resourceId),
+    meta,
+    ip: null,
+  }).catch((err) => console.error("Audit log error:", err));
+}
+
+module.exports = { logAudit, logAuditSystem };

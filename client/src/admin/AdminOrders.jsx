@@ -321,7 +321,7 @@ export default function AdminOrders() {
                       </thead>
                       <tbody>
                         {order.items.map((item, i) => (
-                          <React.Fragment key={i}>
+                          <React.Fragment key={item._id || i}>
                             <tr>
                               <td style={{ display: "flex", alignItems: "center", gap: "8px", position: "relative" }}>
                                 {item.imageUrl && <img src={item.imageUrl} alt="" className="item-thumb-sm" />}
@@ -430,6 +430,17 @@ export default function AdminOrders() {
                   {order.adminNote && (
                     <div style={{ padding: "0 20px 10px", fontSize: "0.88rem", color: "var(--error)" }}>
                       <strong>Admin note:</strong> {order.adminNote}
+                    </div>
+                  )}
+
+                  {order.paymentStatus && order.paymentStatus !== "unpaid" && (
+                    <div style={{ padding: "0 20px 10px", fontSize: "0.88rem", color: "var(--text-muted)" }}>
+                      <strong>Payment:</strong>{" "}
+                      {order.paymentStatus === "paid" && "Paid"}
+                      {order.paymentStatus === "refund_pending" && "Refund processing"}
+                      {order.paymentStatus === "refunded" &&
+                        `Refunded${order.refund?.amount ? ` ($${(order.refund.amount / 100).toFixed(2)})` : ""}`}
+                      {order.paymentStatus === "payment_failed" && "Payment failed"}
                     </div>
                   )}
 

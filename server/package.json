@@ -1,11 +1,12 @@
 {
   "name": "food-vendor-server",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "nodemon app.js",
-    "start": "node app.js",
-    "seed": "node seed.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "test": "jest --runInBand --forceExit"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -24,9 +25,13 @@
     "nodemailer": "^8.0.7",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "passport-local-mongoose": "^8.0.0"
+    "passport-local-mongoose": "^8.0.0",
+    "stripe": "^22.3.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }

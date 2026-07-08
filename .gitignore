@@ -16,9 +16,14 @@ build/
 # ============================================
 .env
 .env.*
+!.env.example
 CLOUDINARY_SETUP.md
 EMAIL_SETUP.md
 playwright.config.ts
+
+# Kubernetes secrets (contain plaintext credentials)
+microservices/k8s/secret.yaml
+!microservices/k8s/secret.yaml.example
 
 # ============================================
 # Logs

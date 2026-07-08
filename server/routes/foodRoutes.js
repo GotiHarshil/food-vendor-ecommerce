@@ -2,9 +2,11 @@
 const express = require("express");
 const router = express.Router();
 const foodController = require("../controllers/foodController");
+const reviewController = require("../controllers/reviewController");
 const wrapAsync = require("../utils/wrapAsync");
 const CartItem = require("../models/CartItem");
 const Order = require("../models/Order");
+const Review = require("../models/Review");
 const { checkoutLimiter } = require("../middleware/rateLimiter");
 const { isLoggedIn } = require("../middleware");
 const { requireOwns } = require("../middleware/ownsResource");
@@ -29,7 +31,7 @@ router.post("/cart/update/:id", wrapAsync(foodController.updateCart));
 router.post(
   "/cart/remove/:id",
   wrapAsync(async (req, res) => {
-    const userId = req.user ? String(req.user._id) : req.sessionID;
+    const userId = foodController.getVisitorId(req);
     const foodId = req.params.id;
     const result = await CartItem.deleteOne({ userId, foodId });
     if (result.deletedCount > 0 && req.user) {
@@ -40,8 +42,16 @@ router.post(
 );
 
 // Checkout & orders
-router.post("/checkout", isLoggedIn, checkoutLimiter, wrapAsync(foodController.checkout));
+router.post("/checkout/create-session", isLoggedIn, checkoutLimiter, wrapAsync(foodController.createCheckoutSession));
+router.get("/checkout/session/:sessionId", isLoggedIn, wrapAsync(foodController.getCheckoutSession));
 router.get("/my-orders", isLoggedIn, wrapAsync(foodController.getMyOrders));
 router.get("/orders/:id", isLoggedIn, wrapAsync(requireOwns(Order, "userId")), wrapAsync(foodController.getOrderById));
+router.post("/orders/:id/cancel", isLoggedIn, wrapAsync(requireOwns(Order, "userId")), wrapAsync(foodController.cancelMyOrder));
+
+// Reviews
+router.get("/orders/:id/reviews", isLoggedIn, wrapAsync(requireOwns(Order, "userId")), wrapAsync(reviewController.getOrderReviews));
+router.post("/reviews", isLoggedIn, wrapAsync(reviewController.createReview));
+router.put("/reviews/:id", isLoggedIn, wrapAsync(requireOwns(Review, "userId")), wrapAsync(reviewController.updateReview));
+router.delete("/reviews/:id", isLoggedIn, wrapAsync(requireOwns(Review, "userId")), wrapAsync(reviewController.deleteReview));
 
 module.exports = router;

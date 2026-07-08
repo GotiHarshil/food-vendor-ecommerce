@@ -16,12 +16,34 @@ function getStatusPosition(status) {
   return STATUS_ORDER.indexOf(status);
 }
 
+function StarInput({ value, onChange, readOnly }) {
+  return (
+    <div style={{ display: "flex", gap: "4px" }}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <i
+          key={n}
+          className="fa-solid fa-star"
+          style={{
+            cursor: readOnly ? "default" : "pointer",
+            color: n <= value ? "#f59e0b" : "#d1d5db",
+          }}
+          onClick={readOnly ? undefined : () => onChange(n)}
+        ></i>
+      ))}
+    </div>
+  );
+}
+
 export default function OrderDetails() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reviews, setReviews] = useState({}); // foodId -> review
+  const [ratingDrafts, setRatingDrafts] = useState({}); // foodId -> { rating, comment }
+  const [submittingReview, setSubmittingReview] = useState(null); // foodId in flight
+  const [reviewError, setReviewError] = useState({}); // foodId -> error message
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -53,6 +75,44 @@ export default function OrderDetails() {
 
     fetchOrder();
   }, [orderId]);
+
+  useEffect(() => {
+    if (order?.status !== "picked_up") return;
+
+    fetch(`/api/food/orders/${orderId}/reviews`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        const byFoodId = {};
+        data.forEach((r) => { byFoodId[r.foodId] = r; });
+        setReviews(byFoodId);
+      })
+      .catch((err) => console.error("Error fetching reviews:", err));
+  }, [order?.status, orderId]);
+
+  const handleSubmitReview = async (foodId) => {
+    const draft = ratingDrafts[foodId] || { rating: 5, comment: "" };
+    setSubmittingReview(foodId);
+    setReviewError((prev) => ({ ...prev, [foodId]: "" }));
+    try {
+      const res = await fetch("/api/food/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, foodId, rating: draft.rating, comment: draft.comment }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setReviews((prev) => ({ ...prev, [foodId]: data.review }));
+      } else {
+        setReviewError((prev) => ({ ...prev, [foodId]: data.error || "Could not submit review." }));
+      }
+    } catch (err) {
+      console.error("Review submit error:", err);
+      setReviewError((prev) => ({ ...prev, [foodId]: "Network error. Please try again." }));
+    } finally {
+      setSubmittingReview(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -191,7 +251,7 @@ export default function OrderDetails() {
             <i className="fa-solid fa-circle-xmark"></i>
             <div>
               <strong>Order cancelled</strong>
-              {order.adminNote && <p>{order.adminNote}</p>}
+              {order.cancelReason && <p>{order.cancelReason}</p>}
             </div>
           </div>
         )}
@@ -233,6 +293,61 @@ export default function OrderDetails() {
           </div>
         )}
       </div>
+
+      {/* Rate Your Food */}
+      {order.status === "picked_up" && (
+        <div className="details-card">
+          <h2 className="card-title">Rate Your Food</h2>
+          <div className="items-list">
+            {order.items?.map((item) => {
+              const existing = reviews[item.foodId];
+              const draft = ratingDrafts[item.foodId] || { rating: 5, comment: "" };
+              return (
+                <div key={item.foodId} style={{ padding: "12px 0", borderBottom: "1px solid #e5e7eb" }}>
+                  <p className="item-name" style={{ marginBottom: "8px" }}>{item.name}</p>
+                  {existing ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#6b7280" }}>
+                      <StarInput value={existing.rating} readOnly />
+                      <span>Thanks for your review!</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <StarInput
+                        value={draft.rating}
+                        onChange={(n) =>
+                          setRatingDrafts((prev) => ({ ...prev, [item.foodId]: { ...draft, rating: n } }))
+                        }
+                      />
+                      <textarea
+                        placeholder="Optional comment..."
+                        value={draft.comment}
+                        onChange={(e) =>
+                          setRatingDrafts((prev) => ({ ...prev, [item.foodId]: { ...draft, comment: e.target.value } }))
+                        }
+                        rows={2}
+                        maxLength="1000"
+                        style={{ padding: "8px 10px", borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                      />
+                      {reviewError[item.foodId] && (
+                        <span style={{ color: "#b91c1c", fontSize: "0.85rem" }}>{reviewError[item.foodId]}</span>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={submittingReview === item.foodId}
+                        onClick={() => handleSubmitReview(item.foodId)}
+                        style={{ alignSelf: "flex-start" }}
+                      >
+                        {submittingReview === item.foodId ? "Submitting..." : "Submit Review"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Pickup Info */}
       <div className="details-card">

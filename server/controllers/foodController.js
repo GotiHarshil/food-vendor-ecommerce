@@ -7,11 +7,23 @@ const { broadcastOrders } = require("./adminController");
 const { sanitizeOrder } = require("../utils/sanitize");
 const { logAudit } = require("../utils/audit");
 const { sendEmail, emailTemplates } = require("../utils/emailService");
+const { attemptCancelOrder, CUSTOMER_CANCELLABLE_STATUSES } = require("../utils/orderCancellation");
+const stripe = require("../utils/stripeClient");
 
 // helper
 function getVisitorId(req) {
-  return req.user ? String(req.user._id) : req.sessionID;
+  if (req.user) return String(req.user._id);
+  // Sessions use saveUninitialized:false, so an untouched session is never
+  // persisted and the browser never gets a stable cookie — every guest
+  // request would otherwise generate a brand-new, unretrievable sessionID.
+  // Writing to req.session here forces express-session to save + set the
+  // cookie as soon as a guest actually starts using the cart.
+  if (!req.session.cartActive) {
+    req.session.cartActive = true;
+  }
+  return req.sessionID;
 }
+module.exports.getVisitorId = getVisitorId;
 
 // GET /api/food/menu — only visible, available, non-deleted items
 module.exports.getFoods = async (req, res, next) => {
@@ -127,7 +139,7 @@ module.exports.addToCart = async (req, res, next) => {
 
 // POST /api/food/cart/update/:id
 module.exports.updateCart = async (req, res) => {
-  const userId = req.user ? String(req.user._id) : req.sessionID;
+  const userId = getVisitorId(req);
   const foodId = req.params.id;
   const action = req.body.action;
   const qty = req.body.qty;
@@ -183,8 +195,16 @@ module.exports.updateCart = async (req, res) => {
   res.json({ success: true, qty: item.qty });
 };
 
-// POST /api/food/checkout — place order (requires login via route middleware)
-module.exports.checkout = async (req, res) => {
+// POST /api/food/checkout/create-session — create the Order (unpaid) and a Stripe
+// Checkout Session for it (requires login via route middleware).
+//
+// The Order is created here, synchronously, rather than in the webhook — this keeps
+// the full cart snapshot (name/price/imageUrl/notes) as a normal DB write instead of
+// having to cram it into Stripe's metadata (which caps each value at 500 chars —
+// easily blown past by a 40-item cart with per-item notes). The order starts
+// `paymentStatus: "unpaid"` and is excluded from the admin queue until the webhook
+// confirms payment, so the kitchen never sees an order nobody has paid for.
+module.exports.createCheckoutSession = async (req, res) => {
   // Check if store is open
   const settings = await StoreSettings.getSettings();
   if (!settings.isOpen) {
@@ -193,10 +213,12 @@ module.exports.checkout = async (req, res) => {
 
   const userId = String(req.user._id);
 
-  // Check if user already has 2 incomplete orders
+  // Check if user already has 2 incomplete *paid* orders (an abandoned/unpaid
+  // checkout attempt must never block the customer from trying again)
   const incompleteOrders = await Order.countDocuments({
     userId: req.user._id,
-    status: { $in: ["pending", "preparing", "ready"] }
+    status: { $in: ["pending", "preparing", "ready"] },
+    paymentStatus: "paid",
   });
 
   if (incompleteOrders >= 2) {
@@ -250,25 +272,83 @@ module.exports.checkout = async (req, res) => {
     subtotal,
     note: note || "",
     status: "pending",
+    paymentStatus: "unpaid",
   });
 
-  // Clear the cart
-  await CartItem.deleteMany({ userId });
+  logAudit(req, "ORDER_CREATED", "Order", order._id, { subtotal: order.subtotal, itemCount: order.items.length });
 
-  // Notify connected admin clients of the new order
-  broadcastOrders().catch(console.error);
+  const clientUrl = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
 
-  // Send confirmation email
-  const emailContent = emailTemplates.orderConfirmation(order, req.user);
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: req.user.email,
+      line_items: orderItems.map((item) => ({
+        price_data: {
+          currency: "usd",
+          product_data: { name: item.name },
+          unit_amount: Math.round(item.price * 100),
+        },
+        quantity: item.qty,
+      })),
+      success_url: `${clientUrl}/order-confirmation?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${clientUrl}/cart`,
+      metadata: { orderId: String(order._id) },
+    });
+  } catch (err) {
+    // Payment session couldn't be created — don't leave a dangling unpaid Order behind
+    await Order.deleteOne({ _id: order._id });
+    console.error("[Stripe] Failed to create checkout session:", err);
+    return res.status(502).json({ error: "Could not start payment. Please try again." });
+  }
+
+  order.stripeCheckoutSessionId = session.id;
+  await order.save();
+
+  res.json({ url: session.url });
+};
+
+// GET /api/food/checkout/session/:sessionId — look up the order created for a Stripe
+// Checkout Session (used by the order-confirmation page after the Stripe redirect).
+module.exports.getCheckoutSession = async (req, res) => {
+  const order = await Order.findOne({ stripeCheckoutSessionId: req.params.sessionId });
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (String(order.userId) !== String(req.user._id) && req.user.role !== "admin") {
+    return res.status(403).json({ error: "Not authorized to view this order" });
+  }
+  res.json(sanitizeOrder(order, req.user.role));
+};
+
+// POST /api/food/orders/:id/cancel — customer-initiated cancel (requires ownership
+// via route middleware). Only allowed while the order is still "pending" — once the
+// kitchen starts preparing it, the customer must contact the vendor.
+module.exports.cancelMyOrder = async (req, res) => {
+  const order = req.resource; // attached by requireOwns middleware
+  const reason = (req.body.reason || "Cancelled by customer").slice(0, 500);
+
+  const result = await attemptCancelOrder(order, {
+    reason,
+    cancelledBy: "customer",
+    allowedStatuses: CUSTOMER_CANCELLABLE_STATUSES,
+  });
+
+  if (!result.ok) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  const emailContent = emailTemplates.orderCancelled(result.order, req.user, reason);
   sendEmail(req.user.email, emailContent.subject, emailContent.html).catch(console.error);
 
-  // Audit log
-  logAudit(req, "ORDER_CREATED", "Order", order._id, { subtotal: order.subtotal, itemCount: order.items.length });
+  logAudit(req, "ORDER_CANCELLED", "Order", result.order._id, { reason, cancelledBy: "customer" });
+  broadcastOrders().catch(console.error);
 
   res.json({
     success: true,
-    message: "Order placed! You'll be notified when it's ready for pickup.",
-    order: sanitizeOrder(order, req.user.role),
+    message: result.order.paymentStatus === "refund_pending"
+      ? "Order cancelled. Your refund is being processed."
+      : "Order cancelled.",
+    order: sanitizeOrder(result.order, req.user.role),
   });
 };
 

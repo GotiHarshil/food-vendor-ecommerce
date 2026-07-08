@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: translation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: translation-service
+  template:
+    metadata:
+      labels:
+        app: translation-service
+    spec:
+      containers:
+        - name: translation-service
+          image: 617371012467.dkr.ecr.us-east-1.amazonaws.com/manu-translation:latest
+          ports:
+            - containerPort: 4003
+          env:
+            - name: PORT
+              value: "4003"
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: manu-secrets
+                  key: GEMINI_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: translation-service
+spec:
+  selector:
+    app: translation-service
+  ports:
+    - port: 4003
+      targetPort: 4003

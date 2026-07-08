@@ -26,6 +26,30 @@ const orderSchema = new mongoose.Schema(
     noteHindi: String, // AI-translated note (Hindi)
     adminNote: String, // admin note (e.g. cancellation reason)
     readyNotifiedAt: Date, // when customer was notified order is ready
+
+    // Payment (Stripe)
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid", "refund_pending", "refunded", "payment_failed"],
+      default: "unpaid",
+    },
+    stripeCheckoutSessionId: { type: String, index: true },
+    stripePaymentIntentId: String,
+    stripeCustomerId: String,
+    paidAt: Date,
+
+    // Cancellation
+    cancelledAt: Date,
+    cancelledBy: { type: String, enum: ["customer", "admin"] },
+    cancelReason: String, // customer-visible reason (distinct from internal adminNote)
+
+    // Refund
+    refund: {
+      stripeRefundId: String,
+      amount: Number, // cents
+      status: { type: String, enum: ["none", "pending", "succeeded", "failed"], default: "none" },
+      refundedAt: Date,
+    },
   },
   { timestamps: true }
 );

@@ -1,8 +1,10 @@
 // server/app.js
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config();
-}
-
+//
+// Defines and exports the Express app only — no side effects (no DB connect,
+// no app.listen()). Real boot lives in server.js; tests require this file
+// directly with Supertest. Whoever requires this file is responsible for
+// having already populated process.env (server.js loads .env; Jest tests set
+// env vars themselves via globalSetup / per-test).
 const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
@@ -24,15 +26,13 @@ const app = express();
 // Trust proxy to fix X-Forwarded-For header issues with rate limiting
 app.set("trust proxy", 1);
 
-const connectDB = require("./utils/db");
-
 // Helmet sets secure response headers (CSP, HSTS, X-Frame-Options, etc.)
 app.use(helmet());
 
 // CORS must come before session/passport so preflight OPTIONS is handled first
 app.use(cors({
   origin: (origin, callback) => {
-    const allowed = process.env.CLIENT_URL || "http://localhost:5173";
+    const allowed = (process.env.CLIENT_URL || "http://localhost:5173").replace(/\/$/, "");
     // Allow same-origin requests (no Origin header) and the configured client URL
     if (!origin || origin === allowed) return callback(null, true);
     // In dev, allow any localhost port so the SSE direct connection works
@@ -43,6 +43,15 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Stripe webhook needs the RAW request body for signature verification, so it must
+// be mounted before the global express.json() body parser below.
+const { handleStripeWebhook } = require("./controllers/stripeWebhookController");
+app.post(
+  "/api/food/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  handleStripeWebhook
+);
 
 // Body parsers before session so req.body is always populated when needed
 app.use(express.json());
@@ -102,11 +111,4 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: err.message || "Something went wrong" });
 });
 
-// Start server
-const PORT = process.env.PORT || 5000;
-
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-});
+module.exports = app;

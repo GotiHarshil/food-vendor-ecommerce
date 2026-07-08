@@ -10,9 +10,19 @@ const STATUS_CONFIG = {
   cancelled: { label: "Cancelled", color: "#ef4444", bg: "#fef2f2", icon: "fa-circle-xmark" },
 };
 
+const PAYMENT_BADGE = {
+  refund_pending: { label: "Refund processing", color: "#b45309", bg: "#fef3c7" },
+  refunded: { label: "Refunded", color: "#374151", bg: "#f3f4f6" },
+  payment_failed: { label: "Payment failed", color: "#b91c1c", bg: "#fef2f2" },
+};
+
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState(null); // order card showing the reason input
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   const fetchOrders = async () => {
     try {
@@ -44,6 +54,32 @@ export default function MyOrders() {
       clearInterval(pollInterval);
     };
   }, []);
+
+  const handleCancel = async (orderId) => {
+    setCancelSubmitting(true);
+    setCancelError("");
+    try {
+      const res = await fetch(`/api/food/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCancellingId(null);
+        setCancelReason("");
+        fetchOrders();
+      } else {
+        setCancelError(data.error || "Could not cancel this order.");
+      }
+    } catch (err) {
+      console.error("Cancel order error:", err);
+      setCancelError("Network error. Please try again.");
+    } finally {
+      setCancelSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -117,6 +153,20 @@ export default function MyOrders() {
                   </span>
                 </div>
 
+                {PAYMENT_BADGE[order.paymentStatus] && (
+                  <div style={{ padding: "0 4px 8px" }}>
+                    <span
+                      className="order-status"
+                      style={{
+                        background: PAYMENT_BADGE[order.paymentStatus].bg,
+                        color: PAYMENT_BADGE[order.paymentStatus].color,
+                      }}
+                    >
+                      {PAYMENT_BADGE[order.paymentStatus].label}
+                    </span>
+                  </div>
+                )}
+
                 {order.status === "ready" && (
                   <div className="ready-notice">
                     <i className="fa-solid fa-bell"></i>
@@ -150,15 +200,69 @@ export default function MyOrders() {
                       <i className="fa-solid fa-message"></i> {order.note}
                     </div>
                   )}
-                  {order.adminNote && order.status === "cancelled" && (
+                  {order.cancelReason && order.status === "cancelled" && (
                     <div className="order-admin-note">
-                      <i className="fa-solid fa-circle-info"></i> {order.adminNote}
+                      <i className="fa-solid fa-circle-info"></i> {order.cancelReason}
                     </div>
                   )}
                   <div className="order-total">
                     <span>Total</span>
                     <span>${order.subtotal.toFixed(2)}</span>
                   </div>
+
+                  <Link
+                    to={`/orders/${order._id}`}
+                    style={{ display: "inline-block", marginTop: "10px", fontSize: "0.9rem" }}
+                  >
+                    {order.status === "picked_up" ? "View Details & Rate" : "View Details"}
+                    {" "}
+                    <i className="fa-solid fa-arrow-right"></i>
+                  </Link>
+
+                  {order.status === "pending" && (
+                    cancellingId === order._id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                        <input
+                          type="text"
+                          placeholder="Reason for cancelling (optional)"
+                          value={cancelReason}
+                          onChange={(e) => setCancelReason(e.target.value)}
+                          maxLength="500"
+                          style={{ padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--border, #e5e7eb)" }}
+                        />
+                        {cancelError && (
+                          <span style={{ color: "#b91c1c", fontSize: "0.85rem" }}>{cancelError}</span>
+                        )}
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            type="button"
+                            className="btn-retry"
+                            disabled={cancelSubmitting}
+                            onClick={() => handleCancel(order._id)}
+                          >
+                            {cancelSubmitting ? "Cancelling..." : "Confirm Cancel"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-retry"
+                            disabled={cancelSubmitting}
+                            onClick={() => { setCancellingId(null); setCancelReason(""); setCancelError(""); }}
+                          >
+                            Nevermind
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-retry"
+                        style={{ marginTop: "10px" }}
+                        onClick={() => { setCancellingId(order._id); setCancelReason(""); setCancelError(""); }}
+                      >
+                        <i className="fa-solid fa-xmark"></i> Cancel Order
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             );

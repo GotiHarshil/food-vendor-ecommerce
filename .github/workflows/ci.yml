@@ -32,6 +32,13 @@ jobs:
       - name: Install client dependencies
         run: npm install --prefix client
 
+      - name: Install microservice dependencies
+        run: |
+          npm install --prefix microservices/auth-service
+          npm install --prefix microservices/order-service
+          npm install --prefix microservices/translation-service
+          npm install --prefix microservices/api-gateway
+
       - name: Lint client code
         run: npm run lint --prefix client
         continue-on-error: true
@@ -39,9 +46,15 @@ jobs:
       - name: Build client
         run: npm run build --prefix client
 
-      - name: Run tests (if available)
-        run: npm test
-        continue-on-error: true
+      - name: Run server tests
+        run: npm test --prefix server
+
+      - name: Run microservice tests
+        run: |
+          npm test --prefix microservices/auth-service
+          npm test --prefix microservices/order-service
+          npm test --prefix microservices/translation-service
+          npm test --prefix microservices/api-gateway
 
   security-audit:
     runs-on: ubuntu-latest
