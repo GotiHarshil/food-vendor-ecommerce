@@ -40,6 +40,8 @@ jobs:
           npm install --prefix microservices/api-gateway
 
       - name: Lint client code
+        # Lint result doesn't vary by Node version — only run it once, not per matrix leg.
+        if: matrix.node-version == '20.x'
         run: npm run lint --prefix client
         continue-on-error: true
 
@@ -95,4 +97,46 @@ jobs:
 
       - name: Run React Doctor
         run: npm run doctor
+        continue-on-error: true
+
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
+
+  dependency-updates:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for outdated dependencies
+        run: |
+          npm install -g npm-check-updates
+          echo "Server outdated packages:"
+          ncu --prefix server || true
+          echo ""
+          echo "Client outdated packages:"
+          ncu --prefix client || true
         continue-on-error: true
