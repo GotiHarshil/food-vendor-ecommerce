@@ -5,4 +5,6 @@ module.exports = async function globalSetup() {
   global.__MONGOINSTANCE = instance;
   process.env.MONGO_URI = instance.getUri();
   process.env.JWT_SECRET = "test-jwt-secret";
+  process.env.NODE_ENV = "test";
+  process.env.PASSWORD_PEPPER = "test-pepper-not-for-production-use";
 };

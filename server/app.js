@@ -9,6 +9,7 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const path = require("path");
+const mongoose = require("mongoose");
 const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
@@ -87,10 +88,42 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(
-  new LocalStrategy({ usernameField: "email" }, User.authenticate())
+  new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
+    try {
+      const user = await User.findOne({ email }).select("+password");
+      if (!user) {
+        // Same generic message for "no such user" and "wrong password" so the
+        // login endpoint doesn't leak which emails are registered.
+        return done(null, false, { message: "Incorrect email or password" });
+      }
+      const valid = await user.verifyPassword(password);
+      if (!valid) {
+        return done(null, false, { message: "Incorrect email or password" });
+      }
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    }
+  })
 );
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+passport.deserializeUser(async (id, done) => {
+  try {
+    // Guards against stale pre-migration session cookies whose serialized
+    // passport.user is a non-ObjectId value (e.g. an email string) — treat
+    // those as simply logged out rather than letting Mongoose throw a
+    // CastError on every request.
+    if (!mongoose.isValidObjectId(id)) {
+      return done(null, false);
+    }
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err);
+  }
+});
 
 // Rate limiting
 app.use("/api", globalApiLimiter);

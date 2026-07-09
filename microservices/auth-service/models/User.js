@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const { hashPassword, verifyPasswordHash } = require("../utils/passwordHashing");
 
 const userSchema = new mongoose.Schema(
   {
@@ -15,16 +15,16 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
+// Hash password before saving (argon2id + HMAC pepper, see utils/passwordHashing.js)
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await hashPassword(this.password);
   next();
 });
 
 // Compare password
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = function (candidatePassword) {
+  return verifyPasswordHash(this.password, candidatePassword);
 };
 
 module.exports = mongoose.model("User", userSchema);

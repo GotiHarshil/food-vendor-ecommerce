@@ -11,7 +11,7 @@ afterAll(async () => { await db.closeDatabase(); });
 
 async function loginAndGetUserId(email) {
   const agent = request.agent(app);
-  await agent.post("/api/user/signup").send({ username: "Reviewer", email, password: "password123" });
+  await agent.post("/api/user/signup").send({ username: "Reviewer", email, password: "Test-Passw0rd-42" });
   const statusRes = await agent.get("/api/user/status");
   return { agent, userId: statusRes.body.user.id };
 }

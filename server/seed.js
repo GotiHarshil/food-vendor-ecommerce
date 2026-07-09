@@ -235,14 +235,14 @@ async function seed() {
     const adminExists = await User.findOne({ role: "admin" });
     if (!adminExists) {
       console.log("\n--- No admin user found ---");
-      console.log("Creating default admin: admin@manu.com / admin123");
+      console.log("Creating default admin: admin@manu.com / Admin12345");
       try {
         const adminUser = new User({
           email: "admin@manu.com",
           name: "Admin",
           role: "admin",
         });
-        await User.register(adminUser, "admin123");
+        await User.registerNewUser(adminUser, "Admin12345");
         console.log("Admin user created successfully!");
       } catch (e) {
         if (e.message.includes("already")) {

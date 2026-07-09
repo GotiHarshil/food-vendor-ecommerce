@@ -8,7 +8,7 @@ beforeAll(async () => { await db.connect(); });
 afterEach(async () => { await db.clearDatabase(); });
 afterAll(async () => { await db.closeDatabase(); });
 
-async function loginAgent(email, password = "password123") {
+async function loginAgent(email, password = "Test-Passw0rd-42") {
   const agent = request.agent(app);
   await agent.post("/api/user/login").send({ email, password });
   return agent;
@@ -19,14 +19,14 @@ describe("admin order management", () => {
     const anonRes = await request(app).get("/api/admin/orders");
     expect(anonRes.status).toBe(401);
 
-    await createUser({ email: "plain@example.com", password: "password123" });
+    await createUser({ email: "plain@example.com", password: "Test-Passw0rd-42" });
     const agent = await loginAgent("plain@example.com");
     const res = await agent.get("/api/admin/orders");
     expect(res.status).toBe(403);
   });
 
   it("lets an admin list and update order status", async () => {
-    const admin = await createAdmin({ email: "admin1@example.com", password: "password123" });
+    const admin = await createAdmin({ email: "admin1@example.com", password: "Test-Passw0rd-42" });
     const agent = await loginAgent("admin1@example.com");
 
     const order = await Order.create({
@@ -44,7 +44,7 @@ describe("admin order management", () => {
   });
 
   it("rejects cancelling an already picked_up order (guard fix regression test)", async () => {
-    const admin = await createAdmin({ email: "admin2@example.com", password: "password123" });
+    const admin = await createAdmin({ email: "admin2@example.com", password: "Test-Passw0rd-42" });
     const agent = await loginAgent("admin2@example.com");
 
     const order = await Order.create({

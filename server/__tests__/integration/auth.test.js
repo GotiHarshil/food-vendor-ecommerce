@@ -12,7 +12,7 @@ describe("auth flow", () => {
     const res = await agent.post("/api/user/signup").send({
       username: "Alice",
       email: "alice@example.com",
-      password: "password123",
+      password: "Test-Passw0rd-42",
     });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -29,20 +29,20 @@ describe("auth flow", () => {
   });
 
   it("rejects duplicate email signup", async () => {
-    await request(app).post("/api/user/signup").send({ username: "A", email: "dup@example.com", password: "password123" });
-    const res = await request(app).post("/api/user/signup").send({ username: "B", email: "dup@example.com", password: "password123" });
+    await request(app).post("/api/user/signup").send({ username: "A", email: "dup@example.com", password: "Test-Passw0rd-42" });
+    const res = await request(app).post("/api/user/signup").send({ username: "B", email: "dup@example.com", password: "Test-Passw0rd-42" });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/already registered/i);
   });
 
   it("logs in with correct credentials and rejects incorrect ones", async () => {
-    await request(app).post("/api/user/signup").send({ username: "Bob", email: "bob@example.com", password: "password123" });
+    await request(app).post("/api/user/signup").send({ username: "Bob", email: "bob@example.com", password: "Test-Passw0rd-42" });
 
     const agent = request.agent(app);
     const badLogin = await agent.post("/api/user/login").send({ email: "bob@example.com", password: "wrongpass" });
     expect(badLogin.status).toBe(401);
 
-    const goodLogin = await agent.post("/api/user/login").send({ email: "bob@example.com", password: "password123" });
+    const goodLogin = await agent.post("/api/user/login").send({ email: "bob@example.com", password: "Test-Passw0rd-42" });
     expect(goodLogin.status).toBe(200);
     expect(goodLogin.body.success).toBe(true);
   });
@@ -54,7 +54,7 @@ describe("auth flow", () => {
 
   it("logs out and clears the session", async () => {
     const agent = request.agent(app);
-    await agent.post("/api/user/signup").send({ username: "Carl", email: "carl@example.com", password: "password123" });
+    await agent.post("/api/user/signup").send({ username: "Carl", email: "carl@example.com", password: "Test-Passw0rd-42" });
 
     const logoutRes = await agent.post("/api/user/logout");
     expect(logoutRes.status).toBe(200);

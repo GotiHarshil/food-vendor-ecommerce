@@ -2,9 +2,9 @@ const crypto = require("crypto");
 const User = require("../../models/user");
 const Food = require("../../models/Food");
 
-async function createUser({ email, password = "password123", name = "Test User", role = "customer" } = {}) {
+async function createUser({ email, password = "Test-Passw0rd-42", name = "Test User", role = "customer" } = {}) {
   const user = new User({ email: email || `user-${crypto.randomUUID()}@example.com`, name, role });
-  return User.register(user, password);
+  return User.registerNewUser(user, password);
 }
 
 async function createAdmin(overrides = {}) {

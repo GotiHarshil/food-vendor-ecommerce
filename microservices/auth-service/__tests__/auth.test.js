@@ -11,7 +11,7 @@ describe("POST /auth/register", () => {
     const res = await request(app).post("/auth/register").send({
       name: "Alice",
       email: "alice@example.com",
-      password: "password123",
+      password: "Test-Passw0rd-42",
     });
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -25,16 +25,30 @@ describe("POST /auth/register", () => {
     expect(res.status).toBe(400);
   });
 
-  it("rejects a password shorter than 6 characters", async () => {
+  it("rejects a password shorter than 10 characters", async () => {
     const res = await request(app).post("/auth/register").send({
       name: "Bob", email: "bob@example.com", password: "123",
     });
     expect(res.status).toBe(400);
   });
 
+  it("rejects a common password", async () => {
+    const res = await request(app).post("/auth/register").send({
+      name: "Eve", email: "eve@example.com", password: "password123",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a password containing the email's local part", async () => {
+    const res = await request(app).post("/auth/register").send({
+      name: "Frank", email: "frank@example.com", password: "frank-password-1",
+    });
+    expect(res.status).toBe(400);
+  });
+
   it("rejects a duplicate email", async () => {
-    await request(app).post("/auth/register").send({ name: "A", email: "dup@example.com", password: "password123" });
-    const res = await request(app).post("/auth/register").send({ name: "B", email: "dup@example.com", password: "password123" });
+    await request(app).post("/auth/register").send({ name: "A", email: "dup@example.com", password: "Test-Passw0rd-42" });
+    const res = await request(app).post("/auth/register").send({ name: "B", email: "dup@example.com", password: "Test-Passw0rd-42" });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/already registered/i);
   });
@@ -42,12 +56,12 @@ describe("POST /auth/register", () => {
 
 describe("POST /auth/login", () => {
   it("logs in with correct credentials and rejects incorrect ones", async () => {
-    await request(app).post("/auth/register").send({ name: "Carl", email: "carl@example.com", password: "password123" });
+    await request(app).post("/auth/register").send({ name: "Carl", email: "carl@example.com", password: "Test-Passw0rd-42" });
 
     const badLogin = await request(app).post("/auth/login").send({ email: "carl@example.com", password: "wrongpass" });
     expect(badLogin.status).toBe(401);
 
-    const goodLogin = await request(app).post("/auth/login").send({ email: "carl@example.com", password: "password123" });
+    const goodLogin = await request(app).post("/auth/login").send({ email: "carl@example.com", password: "Test-Passw0rd-42" });
     expect(goodLogin.status).toBe(200);
     expect(goodLogin.body.token).toBeTruthy();
   });
@@ -74,7 +88,7 @@ describe("token-protected routes", () => {
 
   it("accepts a real token for /auth/verify and /auth/profile", async () => {
     const registerRes = await request(app).post("/auth/register").send({
-      name: "Dana", email: "dana@example.com", password: "password123",
+      name: "Dana", email: "dana@example.com", password: "Test-Passw0rd-42",
     });
     const token = registerRes.body.token;
 

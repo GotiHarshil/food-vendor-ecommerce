@@ -9,7 +9,7 @@ afterAll(async () => { await db.closeDatabase(); });
 
 async function loginAs(email) {
   const agent = request.agent(app);
-  await agent.post("/api/user/signup").send({ username: "Cart User", email, password: "password123" });
+  await agent.post("/api/user/signup").send({ username: "Cart User", email, password: "Test-Passw0rd-42" });
   return agent;
 }
 

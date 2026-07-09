@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const verifyToken = require("../middleware/verifyToken");
+const { validatePasswordStrength } = require("../utils/passwordPolicy");
 
 // ── Helpers ────────────────────────────────────────────────
 const signToken = (user) =>
@@ -20,8 +21,9 @@ router.post("/register", async (req, res) => {
     if (!name || !email || !password)
       return res.status(400).json({ error: "All fields are required" });
 
-    if (password.length < 6)
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    const strength = validatePasswordStrength(password, { email });
+    if (!strength.valid)
+      return res.status(400).json({ error: strength.reason });
 
     const existing = await User.findOne({ email });
     if (existing)

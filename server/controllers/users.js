@@ -2,6 +2,7 @@ const User = require("../models/user");
 const passport = require("passport");
 const crypto = require("crypto");
 const { sendEmail, emailTemplates } = require("../utils/emailService");
+const { validatePasswordStrength } = require("../utils/passwordPolicy");
 
 const REMEMBER_ME_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 
@@ -21,9 +22,14 @@ module.exports.signupAPI = async (req, res, next) => {
       return res.status(400).json({ error: "Email already registered" });
     }
 
+    const strength = validatePasswordStrength(password, { email });
+    if (!strength.valid) {
+      return res.status(400).json({ error: strength.reason });
+    }
+
     // Create new user
     const newUser = new User({ email, name: username });
-    const registeredUser = await User.register(newUser, password);
+    const registeredUser = await User.registerNewUser(newUser, password);
 
     // Login the user
     req.login(registeredUser, (err) => {
@@ -135,8 +141,9 @@ module.exports.changePassword = async (req, res) => {
     return res.status(400).json({ error: "Please provide both passwords" });
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({ error: "New password must be at least 6 characters" });
+  const strength = validatePasswordStrength(newPassword, { email: req.user.email });
+  if (!strength.valid) {
+    return res.status(400).json({ error: strength.reason });
   }
 
   try {
@@ -222,10 +229,6 @@ module.exports.resetPassword = async (req, res) => {
       return res.status(400).json({ error: "Invalid request" });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
-    }
-
     const resetTokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const user = await User.findOne({
       resetToken: resetTokenHash,
@@ -234,6 +237,11 @@ module.exports.resetPassword = async (req, res) => {
 
     if (!user) {
       return res.status(400).json({ error: "Invalid or expired reset link" });
+    }
+
+    const strength = validatePasswordStrength(newPassword, { email: user.email });
+    if (!strength.valid) {
+      return res.status(400).json({ error: strength.reason });
     }
 
     await user.setPassword(newPassword);

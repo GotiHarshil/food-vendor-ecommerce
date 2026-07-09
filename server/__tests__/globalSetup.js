@@ -8,4 +8,5 @@ module.exports = async function globalSetup() {
   process.env.SECRET = "test-secret";
   process.env.SESSION_SECRET = "test-session-secret";
   process.env.CLIENT_URL = "http://localhost:5173";
+  process.env.PASSWORD_PEPPER = "test-pepper-not-for-production-use";
 };
